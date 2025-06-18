@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiplayer Website</title>
+    <style>
+        body {
+            background-color: #add8e6; /* Light blue */
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        nav {
+            width: 100vw;
+            background: #111;
+            color: #fff;
+            box-shadow: 0 2px 8px #0001;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+        nav div {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 64px;
+        }
+        nav a {
+            text-decoration: none;
+        }
+        nav span {
+            font-size: 2.6rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+            color: #fff;
+            background: linear-gradient(90deg,#4fa3d1,#357ca5);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+            line-height: 1;
+        }
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 80px; /* Added padding to prevent content from being hidden under the nav */
+        }
+        h1 {
+            color: #222;
+        }
+        /* Add a large centered square */
+        .center-square {
+            width: 85vw;
+            height: 85vw;
+            max-width: 1100px;
+            max-height: 1100px;
+            background: #8cc6ea; /* Lighter blue, but still darker than background */
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+        }
+        @media (max-width: 700px) {
+            .center-square {
+                width: 98vw;
+                height: 98vw;
+                max-width: 99vw;
+                max-height: 99vw;
+            }
+        }
+        .game-menu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .game-menu button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            background: #4fa3d1;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .game-menu button:hover {
+            background: #357ca5;
+        }
+        .game-area {
+            margin-top: 10px;
+            width: 100%;
+            min-height: 320px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Sliding puzzle styles */
+        .sliding-puzzle {
+            display: grid;
+            grid-template-columns: repeat(4, 50px);
+            grid-template-rows: repeat(4, 50px);
+            gap: 4px;
+        }
+        .sliding-tile {
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            color: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .sliding-tile.empty {
+            background: transparent;
+            cursor: default;
+        }
+        .difficulty-menu {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .difficulty-menu button {
+            padding: 7px 16px;
+            border: none;
+            border-radius: 6px;
+            background: #357ca5;
+            color: #fff;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .difficulty-menu button.selected,
+        .difficulty-menu button:hover {
+            background: #1d4e6c;
+        }
+        /* Responsive for puzzle sizes */
+        .sliding-puzzle.small { grid-template-columns: repeat(3, 44px); grid-template-rows: repeat(3, 44px); }
+        .sliding-puzzle.medium { grid-template-columns: repeat(4, 38px); grid-template-rows: repeat(4, 38px); }
+        .sliding-puzzle.large { grid-template-columns: repeat(5, 32px); grid-template-rows: repeat(5, 32px); }
+        .sliding-tile { font-size: 1rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div>
+            <a href="/">
+                <span>KO[/]GG</span>
+            </a>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="center-square">
+            <div style="text-align:center; width:100%;">
+                <h1>Welcome to the Multiplayer Website</h1>
+                <div id="gameTutorial" style="margin-bottom:16px;font-size:1.1rem;color:#234;min-height:32px;"></div>
+                <div class="game-menu">
+                    <button onclick="showGame(0)">Sliding Puzzle</button>
+                    <button onclick="showGame(1)">Sudoku Mini</button>
+                    <button onclick="showGame(2)">Memory Match</button>
+                    <button onclick="showGame(3)">Word Search</button>
+                    <button onclick="showGame(4)">Lights Out</button>
+                    <button onclick="showGame(5)">Maze Solver</button>
+                    <button onclick="showGame(6)">Simon Says</button>
+                    <button onclick="showGame(7)">Nonogram</button>
+                    <button onclick="showGame(8)">Towers of Hanoi</button>
+                    <button onclick="showGame(9)">Color Pattern</button>
+                </div>
+                <div class="game-area" id="gameArea">
+                    <!-- Game content will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="sliding-puzzle.js"></script>
+    <script src="sudoku.js"></script>
+    <script src="memory-match.js"></script>
+    <script src="word-search.js"></script>
+    <script src="lights-out.js"></script>
+    <script src="maze.js"></script>
+    <script src="simon-says.js"></script>
+    <script src="nonogram.js"></script>
+    <script src="hanoi.js"></script>
+    <script src="color-pattern.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+    // Multiplayer client setup
+    const socket = io();
+    let multiplayerRoom = null;
+    function joinRoom(room) {
+        socket.emit('joinRoom', room);
+        multiplayerRoom = room;
+    }
+    socket.on('joined', (room) => {
+        showGameMsg('Joined room: ' + room, 'success');
+    });
+    socket.on('user-joined', () => {
+        showGameMsg('Another player joined!', 'info');
+    });
+    socket.on('user-left', () => {
+        showGameMsg('A player left the room.', 'info');
+    });
+    // Example: send/receive game actions
+    function sendGameAction(data) {
+        if (multiplayerRoom) socket.emit('game-action', data);
+    }
+    socket.on('game-action', (data) => {
+        // TODO: handle incoming game actions for multiplayer sync
+        // Example: update game state based on data
+    });
+    // Game loader with difficulty
+let currentGameIdx = 0;
+let currentDifficulty = 'medium';
+const difficulties = ['easy', 'medium', 'hard'];
+const gameTutorials = [
+    'Sliding Puzzle: Slide tiles into the empty space to arrange them in order. You can slide any tile in the same row or column as the empty space if the path is clear.',
+    'Sudoku Mini: Fill the grid so each row, column, and box contains all numbers exactly once. Use logic to solve!',
+    'Memory Match: Flip two cards at a time to find matching pairs. Match all pairs to win.',
+    'Word Search: Find hidden words in the letter grid. Words may be placed horizontally, vertically, or diagonally.',
+    'Lights Out: Click tiles to toggle them and their neighbors. Turn off all the lights to win.',
+    'Maze Solver: Find a path from S (start) to E (end) in the maze. Use your imagination or draw a path!',
+    'Simon Says: Watch the color sequence and repeat it by clicking the colored buttons in order.',
+    'Nonogram: Fill in the grid to reveal a hidden picture, following the clues for each row and column.',
+    'Towers of Hanoi: Move all disks from the first tower to the last, moving one at a time and never placing a larger disk on a smaller one.',
+    'Color Pattern: Watch the color pattern and repeat it by clicking the colored buttons in the same order.'
+];
+const gameHTMLs = [
+    slidingPuzzleHTML,
+    sudokuHTML,
+    memoryMatchHTML,
+    wordSearchHTML,
+    lightsOutHTML,
+    mazeHTML,
+    simonSaysHTML,
+    nonogramHTML,
+    hanoiHTML,
+    colorPatternHTML
+];
+const gameInits = [
+    slidingPuzzleInit,
+    sudokuInit,
+    memoryMatchInit,
+    wordSearchInit,
+    lightsOutInit,
+    mazeInit,
+    simonSaysInit,
+    nonogramInit,
+    hanoiInit,
+    colorPatternInit
+];
+function showGame(idx) {
+    currentGameIdx = idx;
+    currentDifficulty = 'medium';
+    renderTutorial();
+    renderDifficultyMenu();
+    renderGame();
+}
+function renderDifficultyMenu() {
+    const area = document.getElementById('gameArea');
+    let diffMenu = '<div class="difficulty-menu">';
+    difficulties.forEach(d => {
+        diffMenu += `<button onclick="setDifficulty('${d}')" class="${currentDifficulty===d?'selected':''}">${d.charAt(0).toUpperCase()+d.slice(1)}</button>`;
+    });
+    diffMenu += '</div>';
+    area.innerHTML = diffMenu + '<div id="gameContent"></div>';
+}
+function setDifficulty(diff) {
+    currentDifficulty = diff;
+    renderTutorial();
+    renderDifficultyMenu();
+    renderGame();
+}
+function renderGame() {
+    const content = document.getElementById('gameContent');
+    content.innerHTML = gameHTMLs[currentGameIdx](currentDifficulty) + `<div id='gameMsg' style='margin-top:10px;color:#234;min-height:24px;'></div><button onclick='resetGame()' style='margin-top:10px;padding:6px 18px;border-radius:6px;background:#357ca5;color:#fff;border:none;cursor:pointer;'>Reset</button>`;
+    setTimeout(()=>gameInits[currentGameIdx](currentDifficulty), 0);
+}
+function renderTutorial() {
+    const tut = document.getElementById('gameTutorial');
+    tut.textContent = gameTutorials[currentGameIdx];
+}
+function resetGame() {
+    renderGame();
+}
+function showGameMsg(msg, type='info') {
+    const msgDiv = document.getElementById('gameMsg');
+    if (!msgDiv) return;
+    msgDiv.textContent = msg;
+    msgDiv.style.background = type==='error' ? '#ffdddd' : type==='success' ? '#ddffdd' : '#e6f0fa';
+    msgDiv.style.borderRadius = '6px';
+    msgDiv.style.padding = '6px 0';
+    msgDiv.style.fontWeight = 'bold';
+    msgDiv.style.transition = 'opacity 0.3s';
+    msgDiv.style.opacity = 1;
+    setTimeout(()=>{ msgDiv.style.opacity = 0; }, 1800);
+}
+// Show first game by default
+showGame(0);
+    </script>
+</body>
+</html>
