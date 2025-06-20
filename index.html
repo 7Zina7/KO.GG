@@ -215,40 +215,21 @@
                 </a>
             </div>
         </nav>
-        <div class="lobby" id="lobby">
-            <h2>Multiplayer Lobby</h2>
-            <form id="roomForm">
-                <input id="roomInput" type="text" placeholder="Room name" required />
-                <button type="submit">Join</button>
-            </form>
-            <div id="userList"></div>
-            <div id="lobbyChat"></div>
-            <form id="chatForm">
-                <input id="chatInput" type="text" placeholder="Type a message..." />
-                <button type="submit">Send</button>
-            </form>
-        </div>
-        <div class="container" id="mainContent" style="display:none;">
+        <div class="lobby" id="lobby" style="display:none;"></div>
+        <div class="container" id="mainContent" style="display:flex;">
             <div class="center-square">
                 <div style="text-align:center; width:100%;">
                     <h1>Battles of the Future</h1>
-                    <div id="gameTutorial"></div>
-                    <div class="game-menu" id="gameMenu">
-                        <button data-game="0">Sliding Puzzle</button>
-                        <button data-game="1">Sudoku Mini</button>
-                        <button data-game="2">Memory Match</button>
-                        <button data-game="3">Word Search</button>
-                        <button data-game="4">Lights Out</button>
-                        <button data-game="5">Maze Solver</button>
-                        <button data-game="6">Simon Says</button>
-                        <button data-game="7">Nonogram</button>
-                        <button data-game="8">Towers of Hanoi</button>
-                        <button data-game="9">Color Pattern</button>
-                    </div>
+                    <!-- Multiplayer lobby and chat removed -->
                     <div class="game-area" id="gameArea"></div>
+                    <h2>Flappy Square</h2>
+                    <canvas id="flappyCanvas" width="400" height="600" style="background:#87ceeb;border-radius:12px;box-shadow:0 2px 16px #357ca555;"></canvas>
+                    <div style="margin-top:12px;font-size:1.1em;">Press <b>Space</b> or tap/click to jump!</div>
+                    <div id="flappyScore" style="margin-top:8px;font-size:1.2em;font-weight:bold;"></div>
                 </div>
             </div>
         </div>
+        <!-- Multiplayer scripts removed -->
         <script src="sliding-puzzle.js"></script>
         <script src="sudoku.js"></script>
         <script src="memory-match.js"></script>
@@ -259,222 +240,86 @@
         <script src="nonogram.js"></script>
         <script src="hanoi.js"></script>
         <script src="color-pattern.js"></script>
-        <script src="/socket.io/socket.io.js"></script>
         <script>
-    // Multiplayer client setup
-    const socket = io();
-    let multiplayerRoom = null;
-    let usersInRoom = [];
-    // Lobby UI logic
-    const lobby = document.getElementById('lobby');
-    const mainContent = document.getElementById('mainContent');
-    const roomForm = document.getElementById('roomForm');
-    const roomInput = document.getElementById('roomInput');
-    const userList = document.getElementById('userList');
-    const lobbyChat = document.getElementById('lobbyChat');
-    const chatForm = document.getElementById('chatForm');
-    const chatInput = document.getElementById('chatInput');
-
-    roomForm.onsubmit = e => {
-        e.preventDefault();
-        if(roomInput.value.trim()) {
-            joinRoom(roomInput.value.trim());
-        }
-    };
-    function joinRoom(room) {
-        socket.emit('joinRoom', room);
-        multiplayerRoom = room;
+    // Game initialization and logic here
+    // For example, setting up event listeners for game actions, starting the game, etc.
+</script>
+<script>
+(function flappyBirdGame() {
+    const canvas = document.getElementById('flappyCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    let birdY = H/2, birdV = 0, gravity = 0.5, jump = -8, birdX = 80, birdR = 18;
+    let pipes = [], pipeGap = 140, pipeW = 60, pipeSpeed = 2.5, frame = 0, score = 0, best = 0, gameOver = false, started = false;
+    function reset() {
+        birdY = H/2; birdV = 0; pipes = []; frame = 0; score = 0; gameOver = false; started = false;
+        document.getElementById('flappyScore').textContent = '';
     }
-    socket.on('joined', (room) => {
-        showGameMsg('Joined room: ' + room, 'success');
-        showMainContentAndSetupMenu();
-    });
-    socket.on('user-joined', () => {
-        showGameMsg('Another player joined!', 'info');
-    });
-    socket.on('user-left', () => {
-        showGameMsg('A player left the room.', 'info');
-    });
-    // User list sync (optional, demo only)
-    socket.on('user-list', (list) => {
-        usersInRoom = list;
-        userList.innerHTML = '<b>Users in room:</b><br>' + list.map(u=>`<span style='color:#357ca5;'>${u}</span>`).join(', ');
-    });
-    // Chat logic
-    chatForm.onsubmit = e => {
-        e.preventDefault();
-        if(chatInput.value.trim()) {
-            socket.emit('chat', chatInput.value.trim());
-            chatInput.value = '';
-        }
-    };
-    socket.on('chat', (msg) => {
-        lobbyChat.innerHTML += `<div style='margin-bottom:2px;'>${msg}</div>`;
-        lobbyChat.scrollTop = lobbyChat.scrollHeight;
-    });
-    // Example: send/receive game actions
-    function sendGameAction(data) {
-        if (multiplayerRoom) socket.emit('game-action', data);
+    function drawBird() {
+        ctx.save();
+        ctx.translate(birdX, birdY);
+        ctx.rotate(Math.min(Math.PI/4, birdV/10));
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(0, 0, birdR, 0, 2*Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
     }
-    socket.on('game-action', (data) => {
-        // TODO: handle incoming game actions for multiplayer sync
-    });
-    // Game loader with difficulty
-let currentGameIdx = 0;
-let currentDifficulty = 'medium';
-const difficulties = ['easy', 'medium', 'hard'];
-const gameTutorials = [
-    'Sliding Puzzle: Slide tiles into the empty space to arrange them in order. You can slide any tile in the same row or column as the empty space if the path is clear.',
-    'Sudoku Mini: Fill the grid so each row, column, and box contains all numbers exactly once. Use logic to solve!',
-    'Memory Match: Flip two cards at a time to find matching pairs. Match all pairs to win.',
-    'Word Search: Find hidden words in the letter grid. Words may be placed horizontally, vertically, or diagonally.',
-    'Lights Out: Click tiles to toggle them and their neighbors. Turn off all the lights to win.',
-    'Maze Solver: Find a path from S (start) to E (end) in the maze. Use your imagination or draw a path!',
-    'Simon Says: Watch the color sequence and repeat it by clicking the colored buttons in order.',
-    'Nonogram: Fill in the grid to reveal a hidden picture, following the clues for each row and column.',
-    'Towers of Hanoi: Move all disks from the first tower to the last, moving one at a time and never placing a larger disk on a smaller one.',
-    'Color Pattern: Watch the color pattern and repeat it by clicking the colored buttons in the same order.'
-];
-const gameHTMLs = [
-    slidingPuzzleHTML,
-    sudokuHTML,
-    memoryMatchHTML,
-    wordSearchHTML,
-    lightsOutHTML,
-    mazeHTML,
-    simonSaysHTML,
-    nonogramHTML,
-    hanoiHTML,
-    colorPatternHTML
-];
-const gameInits = [
-    slidingPuzzleInit,
-    sudokuInit,
-    memoryMatchInit,
-    wordSearchInit,
-    lightsOutInit,
-    mazeInit,
-    simonSaysInit,
-    nonogramInit,
-    hanoiInit,
-    colorPatternInit
-];
-function showGame(idx) {
-    currentGameIdx = idx;
-    currentDifficulty = 'medium';
-    // Ensure main content is visible and lobby is hidden
-    if (lobby) lobby.style.display = 'none';
-    if (mainContent) mainContent.style.display = 'flex';
-    setTimeout(() => {
-        renderTutorial();
-        renderDifficultyMenu();
-        renderGame();
-    }, 0);
-}
-function renderDifficultyMenu() {
-    const area = document.getElementById('gameArea');
-    let diffMenu = '<div class="difficulty-menu">';
-    difficulties.forEach(d => {
-        diffMenu += `<button onclick="setDifficulty('${d}')" class="${currentDifficulty===d?'selected':''}">${d.charAt(0).toUpperCase()+d.slice(1)}</button>`;
-    });
-    diffMenu += '</div>';
-    area.innerHTML = diffMenu + '<div id="gameContent"></div>';
-}
-function setDifficulty(diff) {
-    currentDifficulty = diff;
-    renderTutorial();
-    renderDifficultyMenu();
-    renderGame();
-}
-function renderGame() {
-    const content = document.getElementById('gameContent');
-    content.innerHTML = gameHTMLs[currentGameIdx](currentDifficulty) + `<div id='gameMsg' style='margin-top:10px;color:#234;min-height:24px;'></div><button onclick='resetGame()' style='margin-top:10px;padding:6px 18px;border-radius:6px;background:#357ca5;color:#fff;border:none;cursor:pointer;'>Reset</button>`;
-    setTimeout(()=>gameInits[currentGameIdx](currentDifficulty), 0);
-}
-function renderTutorial() {
-    const tut = document.getElementById('gameTutorial');
-    tut.textContent = gameTutorials[currentGameIdx];
-}
-function resetGame() {
-    renderGame();
-}
-function showGameMsg(msg, type='info') {
-    const msgDiv = document.getElementById('gameMsg');
-    if (!msgDiv) return;
-    msgDiv.textContent = msg;
-    msgDiv.style.background = type==='error' ? '#ffdddd' : type==='success' ? '#ddffdd' : '#e6f0fa';
-    msgDiv.style.borderRadius = '6px';
-    msgDiv.style.padding = '6px 0';
-    msgDiv.style.fontWeight = 'bold';
-    msgDiv.style.transition = 'opacity 0.3s';
-    msgDiv.style.opacity = 1;
-    setTimeout(()=>{ msgDiv.style.opacity = 0; }, 1800);
-}
-
-// Room and chat functionality
-roomForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const roomName = roomInput.value.trim();
-    if (roomName) {
-        joinRoom(roomName);
-        roomInput.value = '';
-    }
-});
-
-chatForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const msg = chatInput.value.trim();
-    if (msg && multiplayerRoom) {
-        socket.emit('chat-message', { room: multiplayerRoom, message: msg });
-        chatInput.value = '';
-    }
-});
-
-socket.on('chat-message', (data) => {
-    if (data.room === multiplayerRoom) {
-        const msgElem = document.createElement('div');
-        msgElem.textContent = data.message;
-        lobbyChat.appendChild(msgElem);
-        lobbyChat.scrollTop = lobbyChat.scrollHeight;
-    }
-});
-
-// Attach event listeners to game menu buttons after DOM is loaded and after mainContent is shown
-function setupGameMenuButtons() {
-    const menu = document.getElementById('gameMenu');
-    if (menu) {
-        menu.querySelectorAll('button[data-game]').forEach(btn => {
-            btn.onclick = null;
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                // Hide lobby, show main content, and show the selected game
-                if (lobby) lobby.style.display = 'none';
-                if (mainContent) mainContent.style.display = 'flex';
-                showGame(Number(btn.getAttribute('data-game')));
-                return false;
-            });
+    function drawPipes() {
+        ctx.fillStyle = '#228B22';
+        pipes.forEach(p => {
+            ctx.fillRect(p.x, 0, pipeW, p.top);
+            ctx.fillRect(p.x, p.top+pipeGap, pipeW, H-p.top-pipeGap);
         });
     }
-}
-// Ensure listeners are re-attached when mainContent is shown
-function showMainContentAndSetupMenu() {
-    lobby.style.display = 'none';
-    mainContent.style.display = '';
-    setupGameMenuButtons();
-    showGame(currentGameIdx); // Always show a game when entering main content
-}
-// Also run on DOMContentLoaded for direct page loads
-window.addEventListener('DOMContentLoaded', function() {
-    setupGameMenuButtons();
-    // Always show the first game if mainContent is visible
-    if (mainContent && mainContent.style.display !== 'none') {
-        showGame(0);
+    function draw() {
+        ctx.clearRect(0,0,W,H);
+        drawPipes();
+        drawBird();
     }
-});
-
-// Show lobby by default
-document.getElementById('lobby').style.display = 'block';
-document.getElementById('mainContent').style.display = 'none';
-    </script>
+    function update() {
+        if (!started) return;
+        birdV += gravity;
+        birdY += birdV;
+        if (frame % 90 === 0) {
+            let top = 60 + Math.random()*(H-pipeGap-120);
+            pipes.push({x:W, top});
+        }
+        pipes.forEach(p => p.x -= pipeSpeed);
+        if (pipes.length && pipes[0].x+pipeW<0) { pipes.shift(); score++; }
+        // Collision
+        pipes.forEach(p => {
+            if (birdX+birdR>p.x && birdX-birdR<p.x+pipeW && (birdY-birdR<p.top || birdY+birdR>p.top+pipeGap)) gameOver = true;
+        });
+        if (birdY-birdR<0 || birdY+birdR>H) gameOver = true;
+        if (gameOver) {
+            best = Math.max(best, score);
+            document.getElementById('flappyScore').textContent = `Game Over! Score: ${score} | Best: ${best} (Press Space or Click to restart)`;
+            started = false;
+        }
+    }
+    function loop() {
+        if (canvas.style.display === 'none') return;
+        if (!gameOver && started) update();
+        draw();
+        frame++;
+        requestAnimationFrame(loop);
+    }
+    function jumpBird() {
+        if (!started) { reset(); started = true; }
+        if (!gameOver) birdV = jump;
+        else { reset(); started = true; }
+    }
+    canvas.onclick = jumpBird;
+    canvas.ontouchstart = jumpBird;
+    window.addEventListener('keydown', function(e){ if(e.code==='Space') jumpBird(); });
+    reset();
+    loop();
+})();
+</script>
 </body>
 </html>

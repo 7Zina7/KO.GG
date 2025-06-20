@@ -278,14 +278,15 @@ def games_menu():
     return render_template_string('''
     <h2>Select a Game</h2>
     <div style="display:flex;flex-wrap:wrap;gap:20px;max-width:700px;">
-      <button class="game-btn" onclick="window.location='/';">Lights Out</button>
-      <button class="game-btn" onclick="window.location='/maze';">Maze Solver</button>
-      <button class="game-btn" onclick="window.location='/maze-multiplayer';">Maze Multiplayer</button>
-      <button class="game-btn" onclick="window.location='/cli';">CLI Games</button>
-      <!-- Add more buttons for other games as web UIs are implemented -->
+      <a class="game-btn" href="/">Lights Out</a>
+      <a class="game-btn" href="/maze">Maze Solver</a>
+      <a class="game-btn" href="/maze-multiplayer">Maze Multiplayer</a>
+      <a class="game-btn" href="/cli">CLI Games</a>
+      <!-- Add more links for other games as web UIs are implemented -->
     </div>
     <style>
       .game-btn {
+        display: inline-block;
         font-size: 1.3em;
         padding: 30px 40px;
         border-radius: 12px;
@@ -295,10 +296,14 @@ def games_menu():
         cursor: pointer;
         transition: background 0.2s, box-shadow 0.2s;
         box-shadow: 2px 2px 8px #bbb;
+        text-decoration: none;
+        color: #222;
+        text-align: center;
       }
       .game-btn:hover {
         background: #ffe066;
         box-shadow: 2px 2px 16px #888;
+        color: #000;
       }
     </style>
     ''')
