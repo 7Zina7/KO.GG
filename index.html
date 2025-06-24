@@ -258,6 +258,17 @@
                         <div style="margin-top:12px;font-size:1.1em;">Press <b>Space</b> or tap/click to jump!</div>
                         <div id="flappyScore" style="margin-top:8px;font-size:1.2em;font-weight:bold;"></div>
                     </div>
+                    <div style="margin-bottom:18px;max-width:340px;margin-left:auto;margin-right:auto;">
+                      <label for="playerNameInput" style="font-size:1.1em;font-weight:bold;">Your Name:</label>
+                      <input id="playerNameInput" type="text" maxlength="16" placeholder="Enter name" style="margin-left:8px;padding:6px 12px;border-radius:6px;border:1px solid #357ca5;font-size:1em;width:140px;">
+                    </div>
+                    <div id="leaderboardPanel" style="position:fixed;top:110px;right:2vw;width:180px;min-height:120px;background:#e6f0fa;border-radius:14px;box-shadow:0 2px 8px #357ca522;padding:10px 10px 8px 10px;z-index:20;display:flex;flex-direction:column;align-items:center;">
+                      <div style="font-size:1.08em;font-weight:bold;color:#357ca5;margin-bottom:7px;">Leaderboard</div>
+                      <table id="leaderboardTable" style="width:100%;border-collapse:collapse;font-size:0.98em;">
+                        <thead><tr style="color:#234;"><th style="text-align:left;">#</th><th style="text-align:left;">Name</th><th style="text-align:right;">Score</th></tr></thead>
+                        <tbody></tbody>
+                      </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -290,7 +301,7 @@
     // (restore original game element sizes and scaling for 400x600 canvas)
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    let birdR = 18;
+    let birdR = 14; // was 18, now smaller
     let birdX = 80;
     let blockY = H - 40;
     let pipeGap = 140;
@@ -300,6 +311,8 @@
     let gravity = 0.5;
     let blockSpeed = 7;
     let knifeW = 18, knifeH = 38, knifeSpeed = 6;
+    let knifeInterval = 30; // Add this for knife spawn rate
+    let blockR = birdR; // Add this for block collision radius
 
     let birdY = H/2, birdV = 0;
     let pipes = [], frame = 0, score = 0, best = 0, gameOver = false, started = false;
@@ -330,7 +343,13 @@
     function reset() {
         birdY = H/2; birdV = 0; pipes = []; frame = 0; score = 0; gameOver = false; started = false; knifeMode = false;
         knives = []; knifeFrame = 0; blockX = W/2; blockV = 0;
+        readyToStart = false;
+        altModePhase = 0;
+        altModeCounter = 0;
+        currentMode = 'flappy';
         document.getElementById('flappyScore').textContent = '';
+        let overlay = document.getElementById('gameOverScreen');
+        if (overlay) overlay.remove();
     }
     function drawClouds() {
         ctx.save();
@@ -359,17 +378,17 @@
         ctx.lineWidth = 2;
         if (shape === 'circle') {
             ctx.beginPath();
-            ctx.ellipse(0, 0, birdR*1.5, birdR, 0, 0, 2*Math.PI); // longer ellipse
+            ctx.ellipse(0, 0, birdR, birdR, 0, 0, 2*Math.PI); // perfect circle
             ctx.fill();
             ctx.stroke();
         } else if (shape === 'square') {
-            ctx.fillRect(-birdR*1.5, -birdR, birdR*3, birdR*2); // longer rectangle
-            ctx.strokeRect(-birdR*1.5, -birdR, birdR*3, birdR*2);
+            ctx.fillRect(-birdR, -birdR, birdR*2, birdR*2); // perfect square
+            ctx.strokeRect(-birdR, -birdR, birdR*2, birdR*2);
         } else if (shape === 'triangle') {
             ctx.beginPath();
             ctx.moveTo(0, -birdR);
-            ctx.lineTo(birdR*1.5, birdR);
-            ctx.lineTo(-birdR*1.5, birdR);
+            ctx.lineTo(birdR, birdR);
+            ctx.lineTo(-birdR, birdR);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
@@ -386,10 +405,23 @@
     function drawKnives() {
         ctx.save();
         knives.forEach(k => {
-            ctx.fillStyle = '#aaa';
-            ctx.fillRect(k.x, k.y, knifeW, knifeH);
-            ctx.fillStyle = '#c00';
-            ctx.fillRect(k.x+knifeW/2-2, k.y+knifeH-10, 4, 10);
+            // Draw a rock: gray ellipse with a dark outline and some cracks
+            ctx.beginPath();
+            ctx.ellipse(k.x + knifeW/2, k.y + knifeH/2, knifeW/2, knifeH/2, 0, 0, 2 * Math.PI);
+            ctx.fillStyle = '#888';
+            ctx.fill();
+            ctx.strokeStyle = '#444';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Draw cracks
+            ctx.strokeStyle = '#bbb';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(k.x + knifeW/2, k.y + knifeH/2);
+            ctx.lineTo(k.x + knifeW/2 + 4, k.y + knifeH/2 + 8);
+            ctx.moveTo(k.x + knifeW/2 - 3, k.y + knifeH/2 - 5);
+            ctx.lineTo(k.x + knifeW/2 + 5, k.y + knifeH/2 - 2);
+            ctx.stroke();
         });
         ctx.restore();
     }
@@ -419,40 +451,156 @@
         if (!wrapper) return;
         let existing = document.getElementById('gameOverScreen');
         if (existing) existing.remove();
-        const div = document.createElement('div');
-        div.id = 'gameOverScreen';
-        div.style.position = 'absolute';
-        div.style.left = '0';
-        div.style.top = '0';
-        div.style.width = '100%';
-        div.style.height = '100%';
-        div.style.display = 'flex';
-        div.style.flexDirection = 'column';
-        div.style.alignItems = 'center';
-        div.style.justifyContent = 'center';
-        div.style.background = 'rgba(30,0,0,0.82)';
-        div.style.zIndex = '20';
-        div.innerHTML = `
-          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:340px;text-align:center;">
+        let overlay = document.createElement('div');
+        overlay.id = 'gameOverScreen';
+        // Overlay logic for normal and fullscreen modes
+        function getFullscreenElement() {
+            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        }
+        function updateOverlayPosition() {
+            const fsElem = getFullscreenElement();
+            if (fsElem) {
+                // Fullscreen: overlay fills the fullscreen element
+                overlay.style.position = 'absolute';
+                overlay.style.left = '0';
+                overlay.style.top = '0';
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                if (overlay.parentNode !== fsElem) fsElem.appendChild(overlay);
+            } else {
+                // Normal: overlay matches canvas position in viewport
+                const rect = canvas.getBoundingClientRect();
+                overlay.style.position = 'fixed';
+                overlay.style.left = rect.left + 'px';
+                overlay.style.top = rect.top + 'px';
+                overlay.style.width = rect.width + 'px';
+                overlay.style.height = rect.height + 'px';
+                if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.background = 'rgba(30,0,0,0.82)';
+            overlay.style.zIndex = '1000';
+            overlay.style.pointerEvents = 'auto';
+        }
+        let rafId;
+        function keepOverlayAligned() {
+            updateOverlayPosition();
+            rafId = requestAnimationFrame(keepOverlayAligned);
+        }
+        keepOverlayAligned();
+        overlay.innerHTML = `
+          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:min(340px,90vw);width:90%;text-align:center;">
             <div style="font-size:2.1em;font-weight:bold;color:#b00;margin-bottom:12px;">Game Over</div>
             <div style="font-size:1.3em;color:#fff;margin-bottom:10px;">Pillars Passed: <b>${lastScore}</b></div>
             <div style="font-size:1.1em;color:#fff;margin-bottom:18px;">All-Time Best: <b>${lastBest}</b></div>
-            <button id="tryAgainBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Try Again</button>
+            <button id="tryAgainBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:12px;">Try Again</button>
+            <button id="quitBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
           </div>
         `;
-        wrapper.appendChild(div);
         document.getElementById('tryAgainBtn').onclick = function() {
-            div.remove();
+            overlay.remove();
             reset();
             started = true;
         };
+        document.getElementById('quitBtn').onclick = function() {
+            overlay.remove();
+            var playBtn = document.getElementById('playBtn');
+            if (playBtn) playBtn.style.display = 'inline-block';
+        };
+        // Listen for fullscreen changes and re-append overlay if needed
+        function onFullscreenChange() { updateOverlayPosition(); }
+        document.addEventListener('fullscreenchange', onFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+        document.addEventListener('mozfullscreenchange', onFullscreenChange);
+        document.addEventListener('MSFullscreenChange', onFullscreenChange);
+        // Clean up the animation frame and listeners when overlay is removed
+        overlay._removeRaf = () => { if (rafId) cancelAnimationFrame(rafId); };
+        overlay._removeFS = () => {
+            document.removeEventListener('fullscreenchange', onFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+            document.removeEventListener('mozfullscreenchange', onFullscreenChange);
+            document.removeEventListener('MSFullscreenChange', onFullscreenChange);
+        };
+        overlay.addEventListener('DOMNodeRemoved', function(e) {
+            if (e.target === overlay) {
+                if (overlay._removeRaf) overlay._removeRaf();
+                if (overlay._removeFS) overlay._removeFS();
+            }
+        });
     }
+    // Leaderboard logic
+    const playerNameInput = document.getElementById('playerNameInput');
+    const leaderboardPanel = document.getElementById('leaderboardPanel');
+    const leaderboardTable = document.getElementById('leaderboardTable').querySelector('tbody');
+    // Helper: get leaderboard from localStorage
+    function getLeaderboard() {
+        let data = localStorage.getItem('flappy_leaderboard');
+        if (!data) return [];
+        try { return JSON.parse(data); } catch { return []; }
+    }
+    // Helper: set leaderboard in localStorage
+    function setLeaderboard(lb) {
+        localStorage.setItem('flappy_leaderboard', JSON.stringify(lb));
+    }
+    // Helper: update leaderboard UI
+    function updateLeaderboard() {
+        let lb = getLeaderboard();
+        lb.sort((a,b) => b.score - a.score);
+        leaderboardTable.innerHTML = '';
+        lb.forEach((entry, i) => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<td>${i+1}</td><td>${entry.name}</td><td style="text-align:right;">${entry.score}</td>`;
+            leaderboardTable.appendChild(tr);
+        });
+    }
+    // Helper: save/update user best score
+    function saveUserScore(name, score) {
+        if (!name) return;
+        let lb = getLeaderboard();
+        let idx = lb.findIndex(e => e.name === name);
+        if (idx >= 0) {
+            if (score > lb[idx].score) lb[idx].score = score;
+        } else {
+            lb.push({name, score});
+        }
+        setLeaderboard(lb);
+        updateLeaderboard();
+    }
+    // On load, set name from localStorage if exists
+    playerNameInput.value = localStorage.getItem('flappy_player_name') || '';
+    playerNameInput.oninput = function() {
+        localStorage.setItem('flappy_player_name', playerNameInput.value.trim());
+    };
+    updateLeaderboard();
     function draw() {
         ctx.clearRect(0,0,W,H);
         drawClouds();
         if (!knifeMode) {
             drawPipes();
             drawBird();
+            // Draw overlay if not started
+            if (!started && !readyToStart && !gameOver) {
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.ellipse(birdX, birdY, birdR+8, birdR+8, 0, 0, 2*Math.PI);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.strokeStyle = '#357ca5';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.ellipse(birdX, birdY, birdR+8, birdR+8, 0, 0, 2*Math.PI);
+                ctx.stroke();
+                ctx.font = 'bold 1.1em Arial';
+                ctx.fillStyle = '#357ca5';
+                ctx.textAlign = 'center';
+                ctx.fillText('Click anywhere to start', birdX, birdY - birdR - 18);
+                ctx.restore();
+            }
         } else {
             drawBlock();
             drawKnives();
@@ -461,6 +609,35 @@
     }
     function update() {
         if (!started) return;
+        // Alternating mode logic
+        if (score >= 5) {
+            if (altModePhase === 0) {
+                altModePhase = 1;
+                altModeCounter = 0;
+                currentMode = 'rock';
+                knifeMode = true;
+                document.getElementById('flappyScore').textContent = 'Rock Dodge! Use ︎ and ︎ or tap/click sides to move.';
+                redTransition = 0;
+                redTransitionActive = true;
+            } else {
+                let since5 = score - 5;
+                let newCounter = Math.floor(since5 / 3);
+                if (newCounter !== altModeCounter) {
+                    altModeCounter = newCounter;
+                    if (currentMode === 'flappy') {
+                        currentMode = 'rock';
+                        knifeMode = true;
+                        document.getElementById('flappyScore').textContent = 'Rock Dodge! Use ︎ and ︎ or tap/click sides to move.';
+                        redTransition = 0;
+                        redTransitionActive = true;
+                    } else {
+                        currentMode = 'flappy';
+                        knifeMode = false;
+                        document.getElementById('flappyScore').textContent = '';
+                    }
+                }
+            }
+        }
         if (!knifeMode) {
             birdV += gravity;
             birdY += birdV;
@@ -476,7 +653,7 @@
                 if (birdX+birdR>p.x && birdX-birdR<p.x+pipeW && (birdY-birdR<p.top || birdY+birdR>p.top+pipeGap)) gameOver = true;
             });
             if (birdY-birdR<0 || birdY+birdR>H) gameOver = true;
-            if (score >= 10 && !knifeMode) {
+            if (score >= 5 && !knifeMode) {
                 knifeMode = true;
                 started = true;
                 document.getElementById('flappyScore').textContent = 'Knife Dodge! Use ︎ and ︎ or tap/click sides to move.';
@@ -535,7 +712,19 @@
         requestAnimationFrame(loop);
     }
     function jumpBird(e) {
-        if (!started) { reset(); started = true; }
+        if (!started) {
+            // Start on any click inside the canvas
+            if (!readyToStart && e && e.type === 'click') {
+                readyToStart = true;
+                started = true;
+                return;
+            } else if (!readyToStart) {
+                return;
+            }
+            reset();
+            started = true;
+            return;
+        }
         if (!knifeMode) {
             if (!gameOver) birdV = jump;
             else { reset(); started = true; }
