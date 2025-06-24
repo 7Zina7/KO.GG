@@ -42,7 +42,7 @@
             line-height: 1;
         }
         .container {
-            min-height: 100vh;
+            min-height: 160vh;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -55,9 +55,10 @@
         /* Add a large centered square */
         .center-square {
             width: 90vw;
-            height: 160vh;
+            height: auto;
+            min-height: 240vh;
             max-width: 1100px;
-            max-height: 2400px;
+            max-height: 3600px;
             background: #8cc6ea; /* Lighter blue, but still darker than background */
             border-radius: 24px;
             display: flex;
@@ -70,9 +71,10 @@
         @media (max-width: 700px) {
             .center-square {
                 width: 99vw;
-                height: 180vh;
+                height: auto;
+                min-height: 270vh;
                 max-width: 100vw;
-                max-height: 2600px;
+                max-height: 4000px;
             }
         }
         .game-menu {
@@ -219,31 +221,43 @@
         <div class="container" id="mainContent" style="display:flex;">
             <div class="center-square">
                 <div style="text-align:center; width:100%;">
-                    <h1>Battles of the Future</h1>
-                    <!-- Multiplayer lobby and chat removed -->
-                    <div class="game-area" id="gameArea"></div>
                     <h2>Flappy Square</h2>
-                    <div style="margin-bottom:16px;">
-                        <button id="optionsBtn" style="padding:8px 18px;border-radius:8px;background:#357ca5;color:#fff;border:none;cursor:pointer;font-size:1em;">Options</button>
+                    <div style="margin-bottom:18px;font-size:1.35em;color:#234;max-width:520px;margin-left:auto;margin-right:auto;line-height:1.6;">
+                      <b>Flappy Square?</b> It sounds awfully familiar....... Wait..... <b>Flappy Birds?!</b> What are <b>YOU</b> doing here?<br><br>
+                      A game of Flappy Square? <b>EZ!</b> But is it really just a normal game......Strange things seem to be happening.<br>
+                      <span style="color:#b00;font-family:monospace;">Glitch--010100 S-OM--E--THING-----I------S 0010101--WRONG!------ERROR CODE 1010101.........................................</span><br><br>
+                      Welcome to a game of Flappy Square! The shapes never lie or cry.......You think that this game will be easy? Think again........ Fight your shape friend and win. Winner survives the other dies. Don't say I didn't warn you!
                     </div>
-                    <div id="optionsPanel" style="display:none;margin-bottom:18px;padding:16px 20px;background:#e6f0fa;border-radius:12px;box-shadow:0 2px 8px #357ca522;max-width:340px;margin:auto;">
-                        <label>Bird Color:
-                            <input type="color" id="birdColorInput" value="#ffd700" style="margin-left:8px;">
-                        </label>
-                        <br><br>
-                        <label>Bird Shape:
-                            <select id="birdShapeInput" style="margin-left:8px;">
-                                <option value="circle">Circle</option>
-                                <option value="square">Square</option>
-                                <option value="triangle">Triangle</option>
-                            </select>
-                        </label>
-                        <br><br>
-                        <button id="closeOptionsBtn" style="padding:6px 16px;border-radius:6px;background:#357ca5;color:#fff;border:none;cursor:pointer;">Close</button>
+                    <div style="text-align:center;margin-bottom:22px;">
+                      <button id="playBtn" style="padding:14px 44px;font-size:1.5em;font-weight:bold;border-radius:12px;background:#1d4e6c;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;transition:background 0.2s;">LET'S PLAY</button>
                     </div>
-                    <canvas id="flappyCanvas" width="400" height="600" style="background:#87ceeb;border-radius:12px;box-shadow:0 2px 16px #357ca555;"></canvas>
-                    <div style="margin-top:12px;font-size:1.1em;">Press <b>Space</b> or tap/click to jump!</div>
-                    <div id="flappyScore" style="margin-top:8px;font-size:1.2em;font-weight:bold;"></div>
+                    <div id="gameWrapper" style="display:none;">
+                        <div class="game-area" id="gameArea"></div>
+                        <div style="margin-bottom:16px;">
+                            <button id="optionsBtn" style="padding:8px 18px;border-radius:8px;background:#357ca5;color:#fff;border:none;cursor:pointer;font-size:1em;">Options</button>
+                        </div>
+                        <div id="optionsPanel" style="display:none;margin-bottom:18px;padding:16px 20px;background:#e6f0fa;border-radius:12px;box-shadow:0 2px 8px #357ca522;max-width:340px;margin:auto;">
+                            <label>Bird Color:
+                                <input type="color" id="birdColorInput" value="#ffd700" style="margin-left:8px;">
+                            </label>
+                            <br><br>
+                            <label>Bird Shape:
+                                <select id="birdShapeInput" style="margin-left:8px;">
+                                    <option value="circle">Circle</option>
+                                    <option value="square">Square</option>
+                                    <option value="triangle">Triangle</option>
+                                </select>
+                            </label>
+                            <br><br>
+                            <button id="closeOptionsBtn" style="padding:6px 16px;border-radius:6px;background:#357ca5;color:#fff;border:none;cursor:pointer;">Close</button>
+                        </div>
+                        <canvas id="flappyCanvas" width="400" height="600" style="background:#87ceeb;border-radius:12px;box-shadow:0 2px 16px #357ca555;"></canvas>
+                        <div style="margin-top:10px;">
+                          <button id="fullscreenBtn" style="padding:7px 18px;border-radius:8px;background:#357ca5;color:#fff;border:none;cursor:pointer;font-size:1em;">Full Screen</button>
+                        </div>
+                        <div style="margin-top:12px;font-size:1.1em;">Press <b>Space</b> or tap/click to jump!</div>
+                        <div id="flappyScore" style="margin-top:8px;font-size:1.2em;font-weight:bold;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -266,12 +280,43 @@
 (function flappyBirdGame() {
     const canvas = document.getElementById('flappyCanvas');
     if (!canvas) return;
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    fullscreenBtn.onclick = () => {
+        if (canvas.requestFullscreen) canvas.requestFullscreen();
+        else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+        else if (canvas.mozRequestFullScreen) canvas.mozRequestFullScreen();
+        else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
+    };
+    // (restore original game element sizes and scaling for 400x600 canvas)
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
-    let birdY = H/2, birdV = 0, gravity = 0.5, jump = -8, birdX = 80, birdR = 18;
-    let pipes = [], pipeGap = 140, pipeW = 60, pipeSpeed = 2.5, frame = 0, score = 0, best = 0, gameOver = false, started = false;
+    let birdR = 18;
+    let birdX = 80;
+    let blockY = H - 40;
+    let pipeGap = 140;
+    let pipeW = 60;
+    let pipeSpeed = 2.5;
+    let jump = -8;
+    let gravity = 0.5;
+    let blockSpeed = 7;
+    let knifeW = 18, knifeH = 38, knifeSpeed = 6;
+
+    let birdY = H/2, birdV = 0;
+    let pipes = [], frame = 0, score = 0, best = 0, gameOver = false, started = false;
     let birdColor = '#ffd700';
     let birdShape = 'circle';
+    let clouds = [
+        {x: 60, y: 80, w: 80, h: 30, speed: 0.5},
+        {x: 220, y: 50, w: 100, h: 36, speed: 0.3},
+        {x: 320, y: 120, w: 60, h: 22, speed: 0.4}
+    ];
+    // Knife Dodge game state
+    let knifeMode = false;
+    let knives = [], knifeFrame = 0;
+    let blockX = W/2, blockV = 0;
+    // Knife mode background transition
+    let redTransition = 0; // 0 to 1
+    let redTransitionActive = false;
     // Options UI
     const optionsBtn = document.getElementById('optionsBtn');
     const optionsPanel = document.getElementById('optionsPanel');
@@ -283,29 +328,48 @@
     birdColorInput.oninput = () => { birdColor = birdColorInput.value; };
     birdShapeInput.onchange = () => { birdShape = birdShapeInput.value; };
     function reset() {
-        birdY = H/2; birdV = 0; pipes = []; frame = 0; score = 0; gameOver = false; started = false;
+        birdY = H/2; birdV = 0; pipes = []; frame = 0; score = 0; gameOver = false; started = false; knifeMode = false;
+        knives = []; knifeFrame = 0; blockX = W/2; blockV = 0;
         document.getElementById('flappyScore').textContent = '';
     }
-    function drawBird() {
+    function drawClouds() {
         ctx.save();
-        ctx.translate(birdX, birdY);
+        clouds.forEach(cloud => {
+            ctx.globalAlpha = 0.6;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.ellipse(cloud.x, cloud.y, cloud.w/2, cloud.h/2, 0, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+        ctx.restore();
+    }
+    function updateClouds() {
+        clouds.forEach(cloud => {
+            cloud.x -= cloud.speed;
+            if (cloud.x + cloud.w/2 < 0) cloud.x = W + cloud.w/2;
+        });
+    }
+    function drawBird(x=birdX, y=birdY, shape=birdShape, color=birdColor) {
+        ctx.save();
+        ctx.translate(x, y);
         ctx.rotate(Math.min(Math.PI/4, birdV/10));
-        ctx.fillStyle = birdColor;
+        ctx.fillStyle = color;
         ctx.strokeStyle = '#333';
         ctx.lineWidth = 2;
-        if (birdShape === 'circle') {
+        if (shape === 'circle') {
             ctx.beginPath();
-            ctx.arc(0, 0, birdR, 0, 2*Math.PI);
+            ctx.ellipse(0, 0, birdR*1.5, birdR, 0, 0, 2*Math.PI); // longer ellipse
             ctx.fill();
             ctx.stroke();
-        } else if (birdShape === 'square') {
-            ctx.fillRect(-birdR, -birdR, birdR*2, birdR*2);
-            ctx.strokeRect(-birdR, -birdR, birdR*2, birdR*2);
-        } else if (birdShape === 'triangle') {
+        } else if (shape === 'square') {
+            ctx.fillRect(-birdR*1.5, -birdR, birdR*3, birdR*2); // longer rectangle
+            ctx.strokeRect(-birdR*1.5, -birdR, birdR*3, birdR*2);
+        } else if (shape === 'triangle') {
             ctx.beginPath();
             ctx.moveTo(0, -birdR);
-            ctx.lineTo(birdR, birdR);
-            ctx.lineTo(-birdR, birdR);
+            ctx.lineTo(birdR*1.5, birdR);
+            ctx.lineTo(-birdR*1.5, birdR);
             ctx.closePath();
             ctx.fill();
             ctx.stroke();
@@ -319,30 +383,148 @@
             ctx.fillRect(p.x, p.top+pipeGap, pipeW, H-p.top-pipeGap);
         });
     }
+    function drawKnives() {
+        ctx.save();
+        knives.forEach(k => {
+            ctx.fillStyle = '#aaa';
+            ctx.fillRect(k.x, k.y, knifeW, knifeH);
+            ctx.fillStyle = '#c00';
+            ctx.fillRect(k.x+knifeW/2-2, k.y+knifeH-10, 4, 10);
+        });
+        ctx.restore();
+    }
+    function drawBlock() {
+        drawBird(blockX, blockY, birdShape, birdColor);
+    }
+    function drawRedTransition() {
+        if (redTransition > 0) {
+            let grad = ctx.createLinearGradient(0, 0, 0, H);
+            grad.addColorStop(0, `rgba(200,0,0,${Math.min(1, redTransition)})`);
+            grad.addColorStop(Math.max(0.01, redTransition), `rgba(200,0,0,${Math.min(1, redTransition)})`);
+            grad.addColorStop(Math.min(1, redTransition + 0.05), 'rgba(200,0,0,0.0)');
+            grad.addColorStop(1, 'rgba(200,0,0,0.0)');
+            ctx.save();
+            ctx.globalAlpha = 0.7;
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            ctx.restore();
+        }
+    }
+    // Game Over UI
+    let showGameOver = false;
+    let lastScore = 0;
+    let lastBest = 0;
+    function showGameOverScreen() {
+        const wrapper = document.getElementById('gameWrapper');
+        if (!wrapper) return;
+        let existing = document.getElementById('gameOverScreen');
+        if (existing) existing.remove();
+        const div = document.createElement('div');
+        div.id = 'gameOverScreen';
+        div.style.position = 'absolute';
+        div.style.left = '0';
+        div.style.top = '0';
+        div.style.width = '100%';
+        div.style.height = '100%';
+        div.style.display = 'flex';
+        div.style.flexDirection = 'column';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.style.background = 'rgba(30,0,0,0.82)';
+        div.style.zIndex = '20';
+        div.innerHTML = `
+          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:340px;text-align:center;">
+            <div style="font-size:2.1em;font-weight:bold;color:#b00;margin-bottom:12px;">Game Over</div>
+            <div style="font-size:1.3em;color:#fff;margin-bottom:10px;">Pillars Passed: <b>${lastScore}</b></div>
+            <div style="font-size:1.1em;color:#fff;margin-bottom:18px;">All-Time Best: <b>${lastBest}</b></div>
+            <button id="tryAgainBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Try Again</button>
+          </div>
+        `;
+        wrapper.appendChild(div);
+        document.getElementById('tryAgainBtn').onclick = function() {
+            div.remove();
+            reset();
+            started = true;
+        };
+    }
     function draw() {
         ctx.clearRect(0,0,W,H);
-        drawPipes();
-        drawBird();
+        drawClouds();
+        if (!knifeMode) {
+            drawPipes();
+            drawBird();
+        } else {
+            drawBlock();
+            drawKnives();
+        }
+        drawRedTransition();
     }
     function update() {
         if (!started) return;
-        birdV += gravity;
-        birdY += birdV;
-        if (frame % 90 === 0) {
-            let top = 60 + Math.random()*(H-pipeGap-120);
-            pipes.push({x:W, top});
-        }
-        pipes.forEach(p => p.x -= pipeSpeed);
-        if (pipes.length && pipes[0].x+pipeW<0) { pipes.shift(); score++; }
-        // Collision
-        pipes.forEach(p => {
-            if (birdX+birdR>p.x && birdX-birdR<p.x+pipeW && (birdY-birdR<p.top || birdY+birdR>p.top+pipeGap)) gameOver = true;
-        });
-        if (birdY-birdR<0 || birdY+birdR>H) gameOver = true;
-        if (gameOver) {
-            best = Math.max(best, score);
-            document.getElementById('flappyScore').textContent = `Game Over! Score: ${score} | Best: ${best} (Press Space or Click to restart)`;
-            started = false;
+        if (!knifeMode) {
+            birdV += gravity;
+            birdY += birdV;
+            updateClouds();
+            if (frame % 90 === 0) {
+                let top = 60 + Math.random()*(H-pipeGap-120);
+                pipes.push({x:W, top});
+            }
+            pipes.forEach(p => p.x -= pipeSpeed);
+            if (pipes.length && pipes[0].x+pipeW<0) { pipes.shift(); score++; }
+            // Collision
+            pipes.forEach(p => {
+                if (birdX+birdR>p.x && birdX-birdR<p.x+pipeW && (birdY-birdR<p.top || birdY+birdR>p.top+pipeGap)) gameOver = true;
+            });
+            if (birdY-birdR<0 || birdY+birdR>H) gameOver = true;
+            if (score >= 10 && !knifeMode) {
+                knifeMode = true;
+                started = true;
+                document.getElementById('flappyScore').textContent = 'Knife Dodge! Use ︎ and ︎ or tap/click sides to move.';
+                redTransition = 0;
+                redTransitionActive = true;
+            }
+            if (gameOver) {
+                best = Math.max(best, score);
+                lastScore = score;
+                lastBest = best;
+                showGameOver = true;
+                setTimeout(showGameOverScreen, 350);
+                document.getElementById('flappyScore').textContent = '';
+                started = false;
+            }
+        } else {
+            // Knife Dodge mode
+            if (redTransitionActive && redTransition < 1) {
+                redTransition += 0.025;
+                if (redTransition >= 1) {
+                    redTransition = 1;
+                    redTransitionActive = false;
+                }
+            }
+            updateClouds();
+            if (knifeFrame % knifeInterval === 0) {
+                let kx = Math.random()*(W-knifeW);
+                knives.push({x:kx, y:-knifeH});
+            }
+            knives.forEach(k => k.y += knifeSpeed);
+            knives = knives.filter(k => k.y < H+knifeH);
+            // Move block
+            blockX += blockV;
+            if (blockX-blockR < 0) blockX = blockR;
+            if (blockX+blockR > W) blockX = W-blockR;
+            // Collision
+            knives.forEach(k => {
+                if (blockX+blockR>k.x && blockX-blockR<k.x+knifeW && blockY+blockR>k.y && blockY-blockR<k.y+knifeH) gameOver = true;
+            });
+            if (gameOver) {
+                lastScore = score;
+                lastBest = best;
+                showGameOver = true;
+                setTimeout(showGameOverScreen, 350);
+                document.getElementById('flappyScore').textContent = '';
+                started = false;
+            }
+            knifeFrame++;
         }
     }
     function loop() {
@@ -352,17 +534,52 @@
         frame++;
         requestAnimationFrame(loop);
     }
-    function jumpBird() {
+    function jumpBird(e) {
         if (!started) { reset(); started = true; }
-        if (!gameOver) birdV = jump;
-        else { reset(); started = true; }
+        if (!knifeMode) {
+            if (!gameOver) birdV = jump;
+            else { reset(); started = true; }
+        } else {
+            // Knife Dodge: move left/right
+            if (e && e.type === 'keydown') {
+                if (e.key === 'ArrowLeft') blockV = -blockSpeed;
+                else if (e.key === 'ArrowRight') blockV = blockSpeed;
+            } else if (e && e.type === 'click') {
+                const mx = e.offsetX;
+                if (mx < W/2) blockV = -blockSpeed;
+                else blockV = blockSpeed;
+            } else if (e && e.type === 'touchstart') {
+                const tx = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+                if (tx < W/2) blockV = -blockSpeed;
+                else blockV = blockSpeed;
+            }
+        }
     }
-    canvas.onclick = jumpBird;
-    canvas.ontouchstart = jumpBird;
-    window.addEventListener('keydown', function(e){ if(e.code==='Space') jumpBird(); });
+    function stopBlock(e) {
+        if (knifeMode) blockV = 0;
+    }
+    canvas.onclick = e => jumpBird({type:'click', offsetX:e.offsetX});
+    canvas.ontouchstart = e => jumpBird(e);
+    window.addEventListener('keydown', function(e){
+        if (!knifeMode && e.code==='Space') jumpBird(e);
+        else if (knifeMode && (e.key==='ArrowLeft'||e.key==='ArrowRight')) jumpBird(e);
+    });
+    window.addEventListener('keyup', stopBlock);
     reset();
     loop();
 })();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var playBtn = document.getElementById('playBtn');
+  var gameWrapper = document.getElementById('gameWrapper');
+  if (playBtn && gameWrapper) {
+    playBtn.onclick = function() {
+      playBtn.style.display = 'none';
+      gameWrapper.style.display = 'block';
+    };
+  }
+});
 </script>
 </body>
 </html>
