@@ -347,6 +347,7 @@
         altModePhase = 0;
         altModeCounter = 0;
         currentMode = 'flappy';
+        bouldersDodged = 0;
         document.getElementById('flappyScore').textContent = '';
         let overlay = document.getElementById('gameOverScreen');
         if (overlay) overlay.remove();
@@ -446,70 +447,105 @@
     let showGameOver = false;
     let lastScore = 0;
     let lastBest = 0;
+    let lastBouldersDodged = 0; // Track last boulders dodged
+    let bouldersDodged = 0; // Track current run's boulders dodged
     function showGameOverScreen() {
         const wrapper = document.getElementById('gameWrapper');
         if (!wrapper) return;
+        // Remove any existing overlays
         let existing = document.getElementById('gameOverScreen');
-        if (existing) existing.remove();
-        let overlay = document.createElement('div');
-        overlay.id = 'gameOverScreen';
-        // Overlay logic for normal and fullscreen modes
-        function getFullscreenElement() {
-            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        if (existing) {
+            if (existing._removeRaf) existing._removeRaf();
+            if (existing._removeFS) existing._removeFS();
+            if (existing.parentNode) existing.parentNode.removeChild(existing);
         }
+        // Fullscreen overlay
+        let overlayFS = document.createElement('div');
+        overlayFS.id = 'gameOverScreenFS';
+        overlayFS.innerHTML = `
+          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:min(340px,90vw);width:90%;text-align:center;">
+            <div style="font-size:2.1em;font-weight:bold;color:#b00;margin-bottom:12px;">Game Over (Fullscreen)</div>
+            <div style="font-size:1.3em;color:#fff;margin-bottom:10px;">Pillars Passed: <b>${lastScore}</b></div>
+            <div style="font-size:1.1em;color:#fff;margin-bottom:10px;">Boulders Dodged: <b>${lastBouldersDodged}</b></div>
+            <div style="font-size:1.1em;color:#fff;margin-bottom:18px;">All-Time Best: <b>${lastBest}</b></div>
+            <button id="tryAgainBtnFS" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:12px;">Try Again</button>
+            <button id="quitBtnFS" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
+          </div>
+        `;
+        // Overlay positioning logic
         function updateOverlayPosition() {
             const fsElem = getFullscreenElement();
-            if (fsElem) {
-                // Fullscreen: overlay fills the fullscreen element
-                overlay.style.position = 'absolute';
-                overlay.style.left = '0';
-                overlay.style.top = '0';
-                overlay.style.width = '100%';
-                overlay.style.height = '100%';
-                if (overlay.parentNode !== fsElem) fsElem.appendChild(overlay);
+            // Always append overlays to document.body, never to canvas or fsElem
+            if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+            if (overlayFS.parentNode !== document.body) document.body.appendChild(overlayFS);
+            const rect = canvas.getBoundingClientRect();
+            if (fsElem === canvas) {
+                // Fullscreen mode: show fullscreen overlay, hide normal overlay
+                overlay.style.display = 'none';
+                overlayFS.style.display = 'flex';
+                overlayFS.style.position = 'fixed';
+                overlayFS.style.left = rect.left + 'px';
+                overlayFS.style.top = rect.top + 'px';
+                overlayFS.style.width = rect.width + 'px';
+                overlayFS.style.height = rect.height + 'px';
+                overlayFS.style.flexDirection = 'column';
+                overlayFS.style.alignItems = 'center';
+                overlayFS.style.justifyContent = 'center';
+                overlayFS.style.background = 'rgba(30,0,0,0.82)';
+                overlayFS.style.zIndex = '1000';
+                overlayFS.style.pointerEvents = 'auto';
             } else {
-                // Normal: overlay matches canvas position in viewport
-                const rect = canvas.getBoundingClientRect();
+                // Not fullscreen: show normal overlay, hide fullscreen overlay
+                overlay.style.display = 'flex';
                 overlay.style.position = 'fixed';
                 overlay.style.left = rect.left + 'px';
                 overlay.style.top = rect.top + 'px';
                 overlay.style.width = rect.width + 'px';
                 overlay.style.height = rect.height + 'px';
-                if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
+                overlay.style.flexDirection = 'column';
+                overlay.style.alignItems = 'center';
+                overlay.style.justifyContent = 'center';
+                overlay.style.background = 'rgba(30,0,0,0.82)';
+                overlay.style.zIndex = '1000';
+                overlay.style.pointerEvents = 'auto';
+                overlayFS.style.display = 'none';
             }
-            overlay.style.display = 'flex';
-            overlay.style.flexDirection = 'column';
-            overlay.style.alignItems = 'center';
-            overlay.style.justifyContent = 'center';
-            overlay.style.background = 'rgba(30,0,0,0.82)';
-            overlay.style.zIndex = '1000';
-            overlay.style.pointerEvents = 'auto';
         }
+        // Initial append (but only once)
+        if (!document.getElementById('gameOverScreen')) document.body.appendChild(overlay);
+        if (!document.getElementById('gameOverScreenFS')) document.body.appendChild(overlayFS);
+        // Animation frame for alignment
         let rafId;
         function keepOverlayAligned() {
             updateOverlayPosition();
             rafId = requestAnimationFrame(keepOverlayAligned);
         }
         keepOverlayAligned();
-        overlay.innerHTML = `
-          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:min(340px,90vw);width:90%;text-align:center;">
-            <div style="font-size:2.1em;font-weight:bold;color:#b00;margin-bottom:12px;">Game Over</div>
-            <div style="font-size:1.3em;color:#fff;margin-bottom:10px;">Pillars Passed: <b>${lastScore}</b></div>
-            <div style="font-size:1.1em;color:#fff;margin-bottom:18px;">All-Time Best: <b>${lastBest}</b></div>
-            <button id="tryAgainBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:12px;">Try Again</button>
-            <button id="quitBtn" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
-          </div>
-        `;
-        document.getElementById('tryAgainBtn').onclick = function() {
-            overlay.remove();
-            reset();
-            started = true;
-        };
-        document.getElementById('quitBtn').onclick = function() {
-            overlay.remove();
-            var playBtn = document.getElementById('playBtn');
-            if (playBtn) playBtn.style.display = 'inline-block';
-        };
+        // Button logic for both overlays
+        function setupOverlayButtons(ov, tryId, quitId) {
+            ov.querySelector(`#${tryId}`).onclick = function() {
+                if (ov._removeRaf) ov._removeRaf();
+                if (ov._removeFS) ov._removeFS();
+                if (ov.parentNode) ov.parentNode.removeChild(ov);
+                // Remove both overlays to prevent duplicates
+                let other = (ov.id === 'gameOverScreen') ? document.getElementById('gameOverScreenFS') : document.getElementById('gameOverScreen');
+                if (other && other.parentNode) other.parentNode.removeChild(other);
+                reset();
+                started = true;
+            };
+            ov.querySelector(`#${quitId}`).onclick = function() {
+                if (ov._removeRaf) ov._removeRaf();
+                if (ov._removeFS) ov._removeFS();
+                if (ov.parentNode) ov.parentNode.removeChild(ov);
+                // Remove both overlays to prevent duplicates
+                let other = (ov.id === 'gameOverScreen') ? document.getElementById('gameOverScreenFS') : document.getElementById('gameOverScreen');
+                if (other && other.parentNode) other.parentNode.removeChild(other);
+                var playBtn = document.getElementById('playBtn');
+                if (playBtn) playBtn.style.display = 'inline-block';
+            };
+        }
+        setupOverlayButtons(overlay, 'tryAgainBtn', 'quitBtn');
+        setupOverlayButtons(overlayFS, 'tryAgainBtnFS', 'quitBtnFS');
         // Listen for fullscreen changes and re-append overlay if needed
         function onFullscreenChange() { updateOverlayPosition(); }
         document.addEventListener('fullscreenchange', onFullscreenChange);
@@ -517,19 +553,22 @@
         document.addEventListener('mozfullscreenchange', onFullscreenChange);
         document.addEventListener('MSFullscreenChange', onFullscreenChange);
         // Clean up the animation frame and listeners when overlay is removed
-        overlay._removeRaf = () => { if (rafId) cancelAnimationFrame(rafId); };
-        overlay._removeFS = () => {
+        overlay._removeRaf = overlayFS._removeRaf = () => { if (rafId) cancelAnimationFrame(rafId); };
+        overlay._removeFS = overlayFS._removeFS = () => {
             document.removeEventListener('fullscreenchange', onFullscreenChange);
             document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
             document.removeEventListener('mozfullscreenchange', onFullscreenChange);
             document.removeEventListener('MSFullscreenChange', onFullscreenChange);
         };
-        overlay.addEventListener('DOMNodeRemoved', function(e) {
-            if (e.target === overlay) {
+        // Robust cleanup on removal
+        const observer = new MutationObserver(() => {
+            if (!document.getElementById('gameOverScreen') && !document.getElementById('gameOverScreenFS')) {
                 if (overlay._removeRaf) overlay._removeRaf();
                 if (overlay._removeFS) overlay._removeFS();
+                observer.disconnect();
             }
         });
+        observer.observe(document.body, {childList:true, subtree:true});
     }
     // Leaderboard logic
     const playerNameInput = document.getElementById('playerNameInput');
@@ -605,7 +644,10 @@
             drawBlock();
             drawKnives();
         }
-        drawRedTransition();
+        // Only draw red transition if in rock mode or during transition
+        if (knifeMode || redTransitionActive) {
+            drawRedTransition();
+        }
     }
     function update() {
         if (!started) return;
@@ -634,6 +676,7 @@
                         currentMode = 'flappy';
                         knifeMode = false;
                         document.getElementById('flappyScore').textContent = '';
+                        redTransition = 0; // Reset red overlay when leaving rock mode
                     }
                 }
             }
@@ -664,8 +707,9 @@
                 best = Math.max(best, score);
                 lastScore = score;
                 lastBest = best;
+                lastBouldersDodged = bouldersDodged;
                 showGameOver = true;
-                setTimeout(showGameOverScreen, 350);
+                showGameOverScreen(); // Show immediately on any game over
                 document.getElementById('flappyScore').textContent = '';
                 started = false;
             }
@@ -683,21 +727,28 @@
                 let kx = Math.random()*(W-knifeW);
                 knives.push({x:kx, y:-knifeH});
             }
-            knives.forEach(k => k.y += knifeSpeed);
-            knives = knives.filter(k => k.y < H+knifeH);
             // Move block
             blockX += blockV;
             if (blockX-blockR < 0) blockX = blockR;
             if (blockX+blockR > W) blockX = W-blockR;
             // Collision
             knives.forEach(k => {
-                if (blockX+blockR>k.x && blockX-blockR<k.x+knifeW && blockY+blockR>k.y && blockY-blockR<k.y+knifeH) gameOver = true;
+                if (blockX+blockR>k.x && blockX-blockR<k.x+knifeW && blockY+blockR>k.y && blockY-blockR<k.y+knifeH) {
+                    gameOver = true;
+                }
             });
+            // Count boulders dodged: if a knife leaves the screen, increment
+            let before = knives.length;
+            knives.forEach(k => k.y += knifeSpeed);
+            let afterKnives = knives.filter(k => k.y < H+knifeH);
+            bouldersDodged += (before - afterKnives.length);
+            knives = afterKnives;
             if (gameOver) {
                 lastScore = score;
                 lastBest = best;
+                lastBouldersDodged = bouldersDodged;
                 showGameOver = true;
-                setTimeout(showGameOverScreen, 350);
+                showGameOverScreen(); // Show immediately on boulder hit
                 document.getElementById('flappyScore').textContent = '';
                 started = false;
             }
@@ -750,7 +801,17 @@
     canvas.onclick = e => jumpBird({type:'click', offsetX:e.offsetX});
     canvas.ontouchstart = e => jumpBird(e);
     window.addEventListener('keydown', function(e){
-        if (!knifeMode && e.code==='Space') jumpBird(e);
+        if (!knifeMode && e.code==='Space') {
+            if (gameOver) {
+                // If game over, pressing Space restarts
+                let overlay = document.getElementById('gameOverScreen');
+                if (overlay) overlay.remove();
+                reset();
+                started = true;
+                return;
+            }
+            jumpBird(e);
+        }
         else if (knifeMode && (e.key==='ArrowLeft'||e.key==='ArrowRight')) jumpBird(e);
     });
     window.addEventListener('keyup', stopBlock);
