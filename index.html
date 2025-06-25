@@ -258,17 +258,6 @@
                         <div style="margin-top:12px;font-size:1.1em;">Press <b>Space</b> or tap/click to jump!</div>
                         <div id="flappyScore" style="margin-top:8px;font-size:1.2em;font-weight:bold;"></div>
                     </div>
-                    <div style="margin-bottom:18px;max-width:340px;margin-left:auto;margin-right:auto;">
-                      <label for="playerNameInput" style="font-size:1.1em;font-weight:bold;">Your Name:</label>
-                      <input id="playerNameInput" type="text" maxlength="16" placeholder="Enter name" style="margin-left:8px;padding:6px 12px;border-radius:6px;border:1px solid #357ca5;font-size:1em;width:140px;">
-                    </div>
-                    <div id="leaderboardPanel" style="position:fixed;top:110px;right:2vw;width:180px;min-height:120px;background:#e6f0fa;border-radius:14px;box-shadow:0 2px 8px #357ca522;padding:10px 10px 8px 10px;z-index:20;display:flex;flex-direction:column;align-items:center;">
-                      <div style="font-size:1.08em;font-weight:bold;color:#357ca5;margin-bottom:7px;">Leaderboard</div>
-                      <table id="leaderboardTable" style="width:100%;border-collapse:collapse;font-size:0.98em;">
-                        <thead><tr style="color:#234;"><th style="text-align:left;">#</th><th style="text-align:left;">Name</th><th style="text-align:right;">Score</th></tr></thead>
-                        <tbody></tbody>
-                      </table>
-                    </div>
                 </div>
             </div>
         </div>
@@ -292,12 +281,33 @@
     const canvas = document.getElementById('flappyCanvas');
     if (!canvas) return;
     const fullscreenBtn = document.getElementById('fullscreenBtn');
+    // Track if fullscreen was entered via the button and not exited
+    let enteredFullscreenViaBtn = false;
+    let inFullscreen = false;
+    function getFullscreenElement() {
+        return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    }
+    function isCanvasInFullscreen() {
+        return getFullscreenElement() === canvas;
+    }
+    function handleFullscreenChange() {
+        inFullscreen = !!isCanvasInFullscreen();
+        if (!inFullscreen) enteredFullscreenViaBtn = false;
+    }
     fullscreenBtn.onclick = () => {
         if (canvas.requestFullscreen) canvas.requestFullscreen();
         else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
         else if (canvas.mozRequestFullScreen) canvas.mozRequestFullScreen();
         else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
+        // Set flag on button click
+        setTimeout(() => {
+            if (isCanvasInFullscreen()) enteredFullscreenViaBtn = true;
+        }, 100);
     };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
     // (restore original game element sizes and scaling for 400x600 canvas)
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
@@ -459,61 +469,48 @@
             if (existing._removeFS) existing._removeFS();
             if (existing.parentNode) existing.parentNode.removeChild(existing);
         }
-        // Fullscreen overlay
-        let overlayFS = document.createElement('div');
-        overlayFS.id = 'gameOverScreenFS';
-        overlayFS.innerHTML = `
-          <div style="background:#fff2;padding:36px 32px 28px 32px;border-radius:18px;box-shadow:0 2px 24px #b00a;max-width:min(340px,90vw);width:90%;text-align:center;">
-            <div style="font-size:2.1em;font-weight:bold;color:#b00;margin-bottom:12px;">Game Over (Fullscreen)</div>
-            <div style="font-size:1.3em;color:#fff;margin-bottom:10px;">Pillars Passed: <b>${lastScore}</b></div>
-            <div style="font-size:1.1em;color:#fff;margin-bottom:10px;">Boulders Dodged: <b>${lastBouldersDodged}</b></div>
-            <div style="font-size:1.1em;color:#fff;margin-bottom:18px;">All-Time Best: <b>${lastBest}</b></div>
-            <button id="tryAgainBtnFS" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:12px;">Try Again</button>
-            <button id="quitBtnFS" style="padding:12px 36px;font-size:1.2em;font-weight:bold;border-radius:10px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
+        // Normal overlay
+        let overlay = document.createElement('div');
+        overlay.id = 'gameOverScreen';
+        // Determine overlay color: blue if died in fullscreen entered via button
+        let useBlue = enteredFullscreenViaBtn && isCanvasInFullscreen();
+        let isFS = isCanvasInFullscreen();
+        // Enhanced UI/UX for fullscreen
+        let overlayBoxStyle = `background:rgba(30,30,60,0.93);padding:${isFS ? '48px 38px 38px 38px' : '36px 32px 28px 32px'};border-radius:22px;box-shadow:${useBlue ? '0 0 32px 8px #2196f3,0 6px 48px #000b' : '0 6px 48px #000b,0 2px 24px #b00a'};max-width:min(380px,98vw);width:96%;text-align:center;backdrop-filter:${isFS ? 'blur(6px)' : 'none'};border:${isFS ? '3px solid #2196f3' : 'none'};transition:all 0.2s;`;
+        let titleFont = isFS ? '2.5em' : '2.1em';
+        let statFont = isFS ? '1.5em' : '1.3em';
+        let subFont = isFS ? '1.2em' : '1.1em';
+        overlay.innerHTML = `
+          <div style="${overlayBoxStyle}">
+            <div style="font-size:${titleFont};font-weight:bold;color:${useBlue ? '#2196f3' : '#b00'};margin-bottom:16px;text-shadow:0 2px 8px #0007;">Game Over</div>
+            <div style="font-size:${statFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:14px;text-shadow:0 1px 6px #0006;">Pillars Passed: <b>${lastScore}</b></div>
+            <div style="font-size:${subFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:12px;text-shadow:0 1px 6px #0006;">Boulders Dodged: <b>${lastBouldersDodged}</b></div>
+            <div style="font-size:${subFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:22px;text-shadow:0 1px 6px #0006;">All-Time Best: <b>${lastBest}</b></div>
+            <button id="tryAgainBtn" style="padding:14px 40px;font-size:1.25em;font-weight:bold;border-radius:12px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:16px;">Try Again</button>
+            <button id="quitBtn" style="padding:14px 40px;font-size:1.25em;font-weight:bold;border-radius:12px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
           </div>
         `;
         // Overlay positioning logic
         function updateOverlayPosition() {
-            const fsElem = getFullscreenElement();
-            // Always append overlays to document.body, never to canvas or fsElem
             if (overlay.parentNode !== document.body) document.body.appendChild(overlay);
-            if (overlayFS.parentNode !== document.body) document.body.appendChild(overlayFS);
+            // Always cover only the canvas, even in fullscreen
             const rect = canvas.getBoundingClientRect();
-            if (fsElem === canvas) {
-                // Fullscreen mode: show fullscreen overlay, hide normal overlay
-                overlay.style.display = 'none';
-                overlayFS.style.display = 'flex';
-                overlayFS.style.position = 'fixed';
-                overlayFS.style.left = rect.left + 'px';
-                overlayFS.style.top = rect.top + 'px';
-                overlayFS.style.width = rect.width + 'px';
-                overlayFS.style.height = rect.height + 'px';
-                overlayFS.style.flexDirection = 'column';
-                overlayFS.style.alignItems = 'center';
-                overlayFS.style.justifyContent = 'center';
-                overlayFS.style.background = 'rgba(30,0,0,0.82)';
-                overlayFS.style.zIndex = '1000';
-                overlayFS.style.pointerEvents = 'auto';
-            } else {
-                // Not fullscreen: show normal overlay, hide fullscreen overlay
-                overlay.style.display = 'flex';
-                overlay.style.position = 'fixed';
-                overlay.style.left = rect.left + 'px';
-                overlay.style.top = rect.top + 'px';
-                overlay.style.width = rect.width + 'px';
-                overlay.style.height = rect.height + 'px';
-                overlay.style.flexDirection = 'column';
-                overlay.style.alignItems = 'center';
-                overlay.style.justifyContent = 'center';
-                overlay.style.background = 'rgba(30,0,0,0.82)';
-                overlay.style.zIndex = '1000';
-                overlay.style.pointerEvents = 'auto';
-                overlayFS.style.display = 'none';
-            }
+            overlay.style.display = 'flex';
+            overlay.style.position = 'absolute';
+            overlay.style.left = rect.left + window.scrollX + 'px';
+            overlay.style.top = rect.top + window.scrollY + 'px';
+            overlay.style.width = rect.width + 'px';
+            overlay.style.height = rect.height + 'px';
+            overlay.style.flexDirection = 'column';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.background = isFS ? 'rgba(10,20,40,0.82)' : 'rgba(30,0,0,0.82)';
+            overlay.style.zIndex = '1000';
+            overlay.style.pointerEvents = 'auto';
+            overlay.style.backdropFilter = isFS ? 'blur(4px)' : 'none';
         }
         // Initial append (but only once)
         if (!document.getElementById('gameOverScreen')) document.body.appendChild(overlay);
-        if (!document.getElementById('gameOverScreenFS')) document.body.appendChild(overlayFS);
         // Animation frame for alignment
         let rafId;
         function keepOverlayAligned() {
@@ -521,15 +518,12 @@
             rafId = requestAnimationFrame(keepOverlayAligned);
         }
         keepOverlayAligned();
-        // Button logic for both overlays
+        // Button logic for overlay only
         function setupOverlayButtons(ov, tryId, quitId) {
             ov.querySelector(`#${tryId}`).onclick = function() {
                 if (ov._removeRaf) ov._removeRaf();
                 if (ov._removeFS) ov._removeFS();
                 if (ov.parentNode) ov.parentNode.removeChild(ov);
-                // Remove both overlays to prevent duplicates
-                let other = (ov.id === 'gameOverScreen') ? document.getElementById('gameOverScreenFS') : document.getElementById('gameOverScreen');
-                if (other && other.parentNode) other.parentNode.removeChild(other);
                 reset();
                 started = true;
             };
@@ -537,32 +531,28 @@
                 if (ov._removeRaf) ov._removeRaf();
                 if (ov._removeFS) ov._removeFS();
                 if (ov.parentNode) ov.parentNode.removeChild(ov);
-                // Remove both overlays to prevent duplicates
-                let other = (ov.id === 'gameOverScreen') ? document.getElementById('gameOverScreenFS') : document.getElementById('gameOverScreen');
-                if (other && other.parentNode) other.parentNode.removeChild(other);
                 var playBtn = document.getElementById('playBtn');
                 if (playBtn) playBtn.style.display = 'inline-block';
             };
         }
         setupOverlayButtons(overlay, 'tryAgainBtn', 'quitBtn');
-        setupOverlayButtons(overlayFS, 'tryAgainBtnFS', 'quitBtnFS');
         // Listen for fullscreen changes and re-append overlay if needed
-        function onFullscreenChange() { updateOverlayPosition(); }
-        document.addEventListener('fullscreenchange', onFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-        document.addEventListener('mozfullscreenchange', onFullscreenChange);
-        document.addEventListener('MSFullscreenChange', onFullscreenChange);
+        function onFullscreenChangeOverlay() { updateOverlayPosition(); }
+        document.addEventListener('fullscreenchange', onFullscreenChangeOverlay);
+        document.addEventListener('webkitfullscreenchange', onFullscreenChangeOverlay);
+        document.addEventListener('mozfullscreenchange', onFullscreenChangeOverlay);
+        document.addEventListener('MSFullscreenChange', onFullscreenChangeOverlay);
         // Clean up the animation frame and listeners when overlay is removed
-        overlay._removeRaf = overlayFS._removeRaf = () => { if (rafId) cancelAnimationFrame(rafId); };
-        overlay._removeFS = overlayFS._removeFS = () => {
-            document.removeEventListener('fullscreenchange', onFullscreenChange);
-            document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-            document.removeEventListener('mozfullscreenchange', onFullscreenChange);
-            document.removeEventListener('MSFullscreenChange', onFullscreenChange);
+        overlay._removeRaf = () => { if (rafId) cancelAnimationFrame(rafId); };
+        overlay._removeFS = () => {
+            document.removeEventListener('fullscreenchange', onFullscreenChangeOverlay);
+            document.removeEventListener('webkitfullscreenchange', onFullscreenChangeOverlay);
+            document.removeEventListener('mozfullscreenchange', onFullscreenChangeOverlay);
+            document.removeEventListener('MSFullscreenChange', onFullscreenChangeOverlay);
         };
         // Robust cleanup on removal
         const observer = new MutationObserver(() => {
-            if (!document.getElementById('gameOverScreen') && !document.getElementById('gameOverScreenFS')) {
+            if (!document.getElementById('gameOverScreen')) {
                 if (overlay._removeRaf) overlay._removeRaf();
                 if (overlay._removeFS) overlay._removeFS();
                 observer.disconnect();
@@ -570,50 +560,6 @@
         });
         observer.observe(document.body, {childList:true, subtree:true});
     }
-    // Leaderboard logic
-    const playerNameInput = document.getElementById('playerNameInput');
-    const leaderboardPanel = document.getElementById('leaderboardPanel');
-    const leaderboardTable = document.getElementById('leaderboardTable').querySelector('tbody');
-    // Helper: get leaderboard from localStorage
-    function getLeaderboard() {
-        let data = localStorage.getItem('flappy_leaderboard');
-        if (!data) return [];
-        try { return JSON.parse(data); } catch { return []; }
-    }
-    // Helper: set leaderboard in localStorage
-    function setLeaderboard(lb) {
-        localStorage.setItem('flappy_leaderboard', JSON.stringify(lb));
-    }
-    // Helper: update leaderboard UI
-    function updateLeaderboard() {
-        let lb = getLeaderboard();
-        lb.sort((a,b) => b.score - a.score);
-        leaderboardTable.innerHTML = '';
-        lb.forEach((entry, i) => {
-            let tr = document.createElement('tr');
-            tr.innerHTML = `<td>${i+1}</td><td>${entry.name}</td><td style="text-align:right;">${entry.score}</td>`;
-            leaderboardTable.appendChild(tr);
-        });
-    }
-    // Helper: save/update user best score
-    function saveUserScore(name, score) {
-        if (!name) return;
-        let lb = getLeaderboard();
-        let idx = lb.findIndex(e => e.name === name);
-        if (idx >= 0) {
-            if (score > lb[idx].score) lb[idx].score = score;
-        } else {
-            lb.push({name, score});
-        }
-        setLeaderboard(lb);
-        updateLeaderboard();
-    }
-    // On load, set name from localStorage if exists
-    playerNameInput.value = localStorage.getItem('flappy_player_name') || '';
-    playerNameInput.oninput = function() {
-        localStorage.setItem('flappy_player_name', playerNameInput.value.trim());
-    };
-    updateLeaderboard();
     function draw() {
         ctx.clearRect(0,0,W,H);
         drawClouds();
