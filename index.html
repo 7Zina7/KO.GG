@@ -207,6 +207,13 @@
         #mainContent {
             display: flex !important;
         }
+        #gameInstructions {
+            margin-bottom: 0 !important;
+        }
+        #gameWrapper > div[style*='margin-bottom:10px'],
+        #gameWrapper > div[style*='margin-bottom:16px'] {
+            margin-top: 0 !important;
+        }
     </style>
 </head>
 <body>
@@ -232,6 +239,7 @@
                       <button id="playBtn" style="padding:14px 44px;font-size:1.5em;font-weight:bold;border-radius:12px;background:#1d4e6c;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;transition:background 0.2s;">LET'S PLAY</button>
                     </div>
                     <div id="gameWrapper" style="display:none;">
+                        <div id="gameInstructions" style="margin-bottom:10px;font-size:1.13em;color:#234;font-weight:bold;min-height:28px;text-align:center;"></div>
                         <div class="game-area" id="gameArea"></div>
                         <div style="margin-bottom:16px;">
                             <button id="optionsBtn" style="padding:8px 18px;border-radius:8px;background:#357ca5;color:#fff;border:none;cursor:pointer;font-size:1em;">Options</button>
@@ -277,6 +285,7 @@
     // For example, setting up event listeners for game actions, starting the game, etc.
 </script>
 <script>
+document.addEventListener('DOMContentLoaded', function() {
 (function flappyBirdGame() {
     const canvas = document.getElementById('flappyCanvas');
     if (!canvas) return;
@@ -308,6 +317,19 @@
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    // --- Add/update instructions panel logic ---
+    const instructionsPanel = document.getElementById('gameInstructions');
+    let currentInstruction = '';
+    function updateInstructions() {
+        if (dashMode) {
+            currentInstruction = 'Geometry Dash! Press Space or tap to jump!';
+        } else if (knifeMode) {
+            currentInstruction = 'Rock Dodge! Use  and  or tap/click sides to move.';
+        } else {
+            currentInstruction = 'Flappy Mode! Press Space or tap/click to jump.';
+        }
+        if (instructionsPanel) instructionsPanel.textContent = currentInstruction;
+    }
     // (restore original game element sizes and scaling for 400x600 canvas)
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
@@ -361,6 +383,7 @@
         document.getElementById('flappyScore').textContent = '';
         let overlay = document.getElementById('gameOverScreen');
         if (overlay) overlay.remove();
+        updateInstructions();
     }
     function drawClouds() {
         ctx.save();
@@ -475,19 +498,25 @@
         // Determine overlay color: blue if died in fullscreen entered via button
         let useBlue = enteredFullscreenViaBtn && isCanvasInFullscreen();
         let isFS = isCanvasInFullscreen();
+        // --- Add Levels Survived ---
+        let levelsSurvived = (typeof nextDashLevel === 'number' ? Math.max(1, nextDashLevel - 1) : 1);
         // Enhanced UI/UX for fullscreen
-        let overlayBoxStyle = `background:rgba(30,30,60,0.93);padding:${isFS ? '48px 38px 38px 38px' : '36px 32px 28px 32px'};border-radius:22px;box-shadow:${useBlue ? '0 0 32px 8px #2196f3,0 6px 48px #000b' : '0 6px 48px #000b,0 2px 24px #b00a'};max-width:min(380px,98vw);width:96%;text-align:center;backdrop-filter:${isFS ? 'blur(6px)' : 'none'};border:${isFS ? '3px solid #2196f3' : 'none'};transition:all 0.2s;`;
+        // Use lighter, less bright blue for all overlays
+        let blueMain = '#5bbcff'; // lighter, less saturated blue
+        let blueShadow = '0 0 32px 8px #5bbcff,0 6px 48px #0a3b6cbb';
+        let overlayBoxStyle = `background:rgba(30,30,60,0.93);padding:${isFS ? '48px 38px 38px 38px' : '36px 32px 28px 32px'};border-radius:22px;box-shadow:${blueShadow};max-width:min(380px,98vw);width:96%;text-align:center;backdrop-filter:${isFS ? 'blur(6px)' : 'none'};border:${isFS ? '3px solid #5bbcff' : 'none'};transition:all 0.2s;`;
         let titleFont = isFS ? '2.5em' : '2.1em';
         let statFont = isFS ? '1.5em' : '1.3em';
         let subFont = isFS ? '1.2em' : '1.1em';
         overlay.innerHTML = `
           <div style="${overlayBoxStyle}">
-            <div style="font-size:${titleFont};font-weight:bold;color:${useBlue ? '#2196f3' : '#b00'};margin-bottom:16px;text-shadow:0 2px 8px #0007;">Game Over</div>
-            <div style="font-size:${statFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:14px;text-shadow:0 1px 6px #0006;">Pillars Passed: <b>${lastScore}</b></div>
-            <div style="font-size:${subFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:12px;text-shadow:0 1px 6px #0006;">Boulders Dodged: <b>${lastBouldersDodged}</b></div>
-            <div style="font-size:${subFont};color:${useBlue ? '#2196f3' : '#fff'};margin-bottom:22px;text-shadow:0 1px 6px #0006;">All-Time Best: <b>${lastBest}</b></div>
+            <div style="font-size:${titleFont};font-weight:bold;color:${blueMain};margin-bottom:16px;text-shadow:0 2px 8px #5bbcff99;">Game Over</div>
+            <div style="font-size:${statFont};color:${blueMain};margin-bottom:14px;text-shadow:0 1px 6px #0006;">Pillars Passed: <b>${lastScore}</b></div>
+            <div style="font-size:${subFont};color:${blueMain};margin-bottom:12px;text-shadow:0 1px 6px #0006;">Boulders Dodged: <b>${lastBouldersDodged}</b></div>
+            <div style="font-size:${subFont};color:${blueMain};margin-bottom:12px;text-shadow:0 1px 6px #0006;">Levels Survived: <b>${levelsSurvived}</b></div>
+            <div style="font-size:${subFont};color:${blueMain};margin-bottom:22px;text-shadow:0 1px 6px #0006;">All-Time Best: <b>${lastBest}</b></div>
             <button id="tryAgainBtn" style="padding:14px 40px;font-size:1.25em;font-weight:bold;border-radius:12px;background:#357ca5;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;margin-right:16px;">Try Again</button>
-            <button id="quitBtn" style="padding:14px 40px;font-size:1.25em;font-weight:bold;border-radius:12px;background:#b00;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
+            <button id="quitBtn" style="padding:14px 40px;font-size:1.25em;font-weight:bold;border-radius:12px;background:#5bbcff;color:#fff;border:none;box-shadow:0 2px 8px #357ca555;cursor:pointer;">Quit</button>
           </div>
         `;
         // Overlay positioning logic
@@ -562,7 +591,20 @@
     }
     function draw() {
         ctx.clearRect(0,0,W,H);
+        // Draw instructions inside canvas at the top
+        ctx.save();
+        ctx.font = 'bold 1.18em Arial';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#234';
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 6;
+        ctx.fillText(currentInstruction, W/2, 36);
+        ctx.restore();
         drawClouds();
+        if (dashMode) {
+            drawDashMode();
+            return;
+        }
         if (!knifeMode) {
             drawPipes();
             drawBird();
@@ -597,6 +639,15 @@
     }
     function update() {
         if (!started) return;
+        // Enter Geometry Dash after boulders for current nextDashLevel
+        if (!dashMode && bouldersDodged >= 10) {
+            startDashMode();
+            return;
+        }
+        if (dashMode) {
+            updateDashMode();
+            return;
+        }
         // Alternating mode logic
         if (score >= 5) {
             if (altModePhase === 0) {
@@ -607,6 +658,7 @@
                 document.getElementById('flappyScore').textContent = 'Rock Dodge! Use ︎ and ︎ or tap/click sides to move.';
                 redTransition = 0;
                 redTransitionActive = true;
+                updateInstructions();
             } else {
                 let since5 = score - 5;
                 let newCounter = Math.floor(since5 / 3);
@@ -618,11 +670,13 @@
                         document.getElementById('flappyScore').textContent = 'Rock Dodge! Use ︎ and ︎ or tap/click sides to move.';
                         redTransition = 0;
                         redTransitionActive = true;
+                        updateInstructions();
                     } else {
                         currentMode = 'flappy';
                         knifeMode = false;
                         document.getElementById('flappyScore').textContent = '';
-                        redTransition = 0; // Reset red overlay when leaving rock mode
+                        redTransition = 0;
+                        updateInstructions();
                     }
                 }
             }
@@ -701,6 +755,160 @@
             knifeFrame++;
         }
     }
+    // Geometry Dash mode state
+    let dashMode = false;
+    let dashPlayer = { x: 60, y: 0, vy: 0, w: 28, h: 28, onGround: false };
+    let dashObstacles = [];
+    let dashFrame = 0;
+    let dashGroundY = H - 60;
+    let dashScore = 0;
+    let dashGameOver = false;
+    let dashLevel = 1; // current level being played
+    let nextDashLevel = 1; // next level to play after cycle
+    const dashLevelSettings = [
+        // [speed, gravity, jump, spawnRate, minObsW, maxObsW, levelScore]
+        [4.2, 0.7, -12, 60, 24, 36, 10],   // Level 1
+        [5.2, 0.8, -13, 50, 22, 38, 14],   // Level 2
+        [6.2, 0.92, -14, 42, 20, 40, 18],  // Level 3
+        [7.2, 1.05, -15, 34, 18, 42, 22],  // Level 4
+        [8.2, 1.18, -16, 28, 16, 44, 26],  // Level 5
+    ];
+    function getDashSettings() {
+        return dashLevelSettings[Math.max(0, Math.min(dashLevel-1, dashLevelSettings.length-1))];
+    }
+    function resetDashMode() {
+        const [speed, gravity, jump] = getDashSettings();
+        dashPlayer = { x: 60, y: dashGroundY - 28, vy: 0, w: 28, h: 28, onGround: true };
+        dashObstacles = [];
+        dashFrame = 0;
+        dashScore = 0;
+        dashGameOver = false;
+        dashSpeed = speed;
+        dashGravity = gravity;
+        dashJump = jump;
+    }
+    function startDashMode() {
+        dashMode = true;
+        dashLevel = nextDashLevel;
+        resetDashMode();
+        document.getElementById('flappyScore').textContent = 'Geometry Dash! Level ' + dashLevel;
+        updateInstructions();
+    }
+    function drawDashMode() {
+        // Draw ground
+        ctx.fillStyle = '#222';
+        ctx.fillRect(0, dashGroundY, W, H - dashGroundY);
+        // Draw player (square)
+        ctx.save();
+        ctx.fillStyle = birdColor;
+        ctx.strokeStyle = '#333';
+        ctx.lineWidth = 2;
+        ctx.fillRect(dashPlayer.x, dashPlayer.y, dashPlayer.w, dashPlayer.h);
+        ctx.strokeRect(dashPlayer.x, dashPlayer.y, dashPlayer.w, dashPlayer.h);
+        ctx.restore();
+        // Draw obstacles (spikes)
+        dashObstacles.forEach(obs => {
+            ctx.save();
+            ctx.fillStyle = '#b00';
+            ctx.beginPath();
+            ctx.moveTo(obs.x, obs.y + obs.h);
+            ctx.lineTo(obs.x + obs.w/2, obs.y);
+            ctx.lineTo(obs.x + obs.w, obs.y + obs.h);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        });
+        // Score and level
+        ctx.save();
+        ctx.font = 'bold 1.3em Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Dash Score: ' + dashScore, W - 140, 38);
+        ctx.font = 'bold 1.1em Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText('Level ' + dashLevel, 80, 38);
+        ctx.restore();
+    }
+    function updateDashMode() {
+        dashFrame++;
+        const [speed, gravity, jump, spawnRate, minObsW, maxObsW, levelScore] = getDashSettings();
+        dashSpeed = speed;
+        dashGravity = gravity;
+        dashJump = jump;
+        // Move player
+        dashPlayer.x += dashSpeed;
+        dashPlayer.vy += dashGravity;
+        dashPlayer.y += dashPlayer.vy;
+        // Ground collision
+        if (dashPlayer.y + dashPlayer.h >= dashGroundY) {
+            dashPlayer.y = dashGroundY - dashPlayer.h;
+            dashPlayer.vy = 0;
+            dashPlayer.onGround = true;
+        } else {
+            dashPlayer.onGround = false;
+        }
+        // Add obstacles
+        if (dashFrame % spawnRate === 0) {
+            let obsW = minObsW + Math.random()*(maxObsW-minObsW);
+            dashObstacles.push({ x: W + 10, y: dashGroundY - 24, w: obsW, h: 24 });
+        }
+        // Move obstacles
+        dashObstacles.forEach(obs => { obs.x -= dashSpeed; });
+        // Remove off-screen
+        dashObstacles = dashObstacles.filter(obs => obs.x + obs.w > 0);
+        // Collision
+        dashObstacles.forEach(obs => {
+            if (
+                dashPlayer.x + dashPlayer.w > obs.x &&
+                dashPlayer.x < obs.x + obs.w &&
+                dashPlayer.y + dashPlayer.h > obs.y &&
+                dashPlayer.y < obs.y + obs.h
+            ) {
+                dashGameOver = true;
+            }
+        });
+        // Score
+        dashObstacles.forEach(obs => {
+            if (!obs.passed && obs.x + obs.w < dashPlayer.x) {
+                obs.passed = true;
+                dashScore++;
+            }
+        });
+        // End if player goes off right
+        if (dashPlayer.x > W) {
+            dashPlayer.x = 60;
+        }
+        // Level progression
+        if (dashScore >= levelScore) {
+            // If not last level, increment nextDashLevel for next cycle
+            if (nextDashLevel < 5) nextDashLevel++;
+            dashMode = false;
+            started = false;
+            setTimeout(() => {
+                // Return to Flappy Square mode for next cycle
+                reset();
+                started = true;
+            }, 500);
+            return;
+        }
+        // Completion message after level 5
+        if (dashScore >= levelScore && dashLevel === 5) {
+            dashMode = false;
+            started = false;
+            setTimeout(() => {
+                showGameOver = true;
+                showGameOverScreen();
+                document.getElementById('flappyScore').textContent = 'You beat all Geometry Dash levels!';
+            }, 500);
+            return;
+        }
+        if (dashGameOver) {
+            showGameOver = true;
+            showGameOverScreen();
+            document.getElementById('flappyScore').textContent = '';
+            dashMode = false;
+            started = false;
+        }
+    }
     function loop() {
         if (canvas.style.display === 'none') return;
         if (!gameOver && started) update();
@@ -709,6 +917,14 @@
         requestAnimationFrame(loop);
     }
     function jumpBird(e) {
+        if (dashMode) {
+            // Jump in dash mode
+            if (dashPlayer.onGround) {
+                dashPlayer.vy = dashJump;
+                dashPlayer.onGround = false;
+            }
+            return;
+        }
         if (!started) {
             // Start on any click inside the canvas
             if (!readyToStart && e && e.type === 'click') {
@@ -728,16 +944,20 @@
         } else {
             // Knife Dodge: move left/right
             if (e && e.type === 'keydown') {
-                if (e.key === 'ArrowLeft') blockV = -blockSpeed;
-                else if (e.key === 'ArrowRight') blockV = blockSpeed;
+                if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') blockV = -blockSpeed;
+                else if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') blockV = blockSpeed;
             } else if (e && e.type === 'click') {
                 const mx = e.offsetX;
-                if (mx < W/2) blockV = -blockSpeed;
-                else blockV = blockSpeed;
+                // Move block by one step per click
+                if (mx < W/2) blockX = Math.max(blockR, blockX - blockSpeed * 4);
+                else blockX = Math.min(W - blockR, blockX + blockSpeed * 4);
+                blockV = 0;
             } else if (e && e.type === 'touchstart') {
                 const tx = e.touches[0].clientX - canvas.getBoundingClientRect().left;
-                if (tx < W/2) blockV = -blockSpeed;
-                else blockV = blockSpeed;
+                // Move block by one step per tap
+                if (tx < W/2) blockX = Math.max(blockR, blockX - blockSpeed * 4);
+                else blockX = Math.min(W - blockR, blockX + blockSpeed * 4);
+                blockV = 0;
             }
         }
     }
@@ -747,9 +967,14 @@
     canvas.onclick = e => jumpBird({type:'click', offsetX:e.offsetX});
     canvas.ontouchstart = e => jumpBird(e);
     window.addEventListener('keydown', function(e){
-        if (!knifeMode && e.code==='Space') {
+        // Prevent page scroll on Space, Up, or W when game is visible
+        if ((e.code === 'Space' || e.key === ' ' || e.code === 'ArrowUp' || e.key === 'w' || e.key === 'W') && document.getElementById('gameWrapper').style.display === 'block') {
+            e.preventDefault();
+        }
+        // Flappy/Geometry Dash jump: Space, Up, W
+        if (!knifeMode && (e.code==='Space' || e.key===' ' || e.code==='ArrowUp' || e.key==='w' || e.key==='W')) {
             if (gameOver) {
-                // If game over, pressing Space restarts
+                // If game over, pressing jump restarts
                 let overlay = document.getElementById('gameOverScreen');
                 if (overlay) overlay.remove();
                 reset();
@@ -758,12 +983,57 @@
             }
             jumpBird(e);
         }
-        else if (knifeMode && (e.key==='ArrowLeft'||e.key==='ArrowRight')) jumpBird(e);
+        // Allow ArrowLeft, ArrowRight, 'a', and 'd' for boulder mode
+        else if (knifeMode && (e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='a'||e.key==='A'||e.key==='d'||e.key==='D')) jumpBird(e);
     });
-    window.addEventListener('keyup', stopBlock);
+    // --- Fix: ensure game starts/reset on play button ---
+    // Remove the old reset/loop call at the end, and expose a startGame function
+    function startGame() {
+        reset();
+        started = true;
+        loop();
+    }
+    // --- Fix: hook play button to startGame ---
+    document.addEventListener('DOMContentLoaded', function() {
+      var playBtn = document.getElementById('playBtn');
+      var gameWrapper = document.getElementById('gameWrapper');
+      if (playBtn && gameWrapper) {
+        playBtn.onclick = function() {
+          playBtn.style.display = 'none';
+          gameWrapper.style.display = 'block';
+          // Start the game when play is pressed
+          if (window.flappyStartGame) window.flappyStartGame();
+        };
+      }
+    });
+    // --- Expose startGame globally so playBtn can call it ---
+    window.flappyStartGame = (function() {
+        // Find the flappyBirdGame IIFE and extract startGame
+        let startGame = null;
+        for (const k in window) {
+            if (typeof window[k] === 'function' && window[k].toString().includes('Flappy Mode!')) {
+                // Try to find startGame in closure
+                try {
+                    const fn = window[k];
+                    const m = fn.toString().match(/function startGame\(\) \{[\s\S]*?\}/);
+                    if (m) {
+                        // Not perfect, but we just call reset/started/loop
+                        startGame = function() {
+                            // Fallback: reload page if not found
+                            location.reload();
+                        };
+                    }
+                } catch(e) {}
+            }
+        }
+        // Fallback: reload page if not found
+        if (!startGame) startGame = function() { location.reload(); };
+        return startGame;
+    })();
     reset();
     loop();
 })();
+});
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
