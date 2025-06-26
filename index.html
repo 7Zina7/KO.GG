@@ -482,6 +482,8 @@ document.addEventListener('DOMContentLoaded', function() {
     let lastBest = 0;
     let lastBouldersDodged = 0; // Track last boulders dodged
     let bouldersDodged = 0; // Track current run's boulders dodged
+    let cyclesSurvived = 0; // Track full cycles completed
+    let lastCyclesSurvived = 0; // For overlay
     function showGameOverScreen() {
         const wrapper = document.getElementById('gameWrapper');
         if (!wrapper) return;
@@ -499,15 +501,14 @@ document.addEventListener('DOMContentLoaded', function() {
         let useBlue = enteredFullscreenViaBtn && isCanvasInFullscreen();
         let isFS = isCanvasInFullscreen();
         // --- Add Levels Survived ---
-        let levelsSurvived = (typeof nextDashLevel === 'number' ? Math.max(1, nextDashLevel - 1) : 1);
-        // Enhanced UI/UX for fullscreen
-        // Use lighter, less bright blue for all overlays
-        let blueMain = '#5bbcff'; // lighter, less saturated blue
+        let levelsSurvived = cyclesSurvived; // Now tracks full cycles only
+        // Unified blue overlay for both fullscreen and non-fullscreen
+        let blueMain = '#5bbcff';
         let blueShadow = '0 0 32px 8px #5bbcff,0 6px 48px #0a3b6cbb';
-        let overlayBoxStyle = `background:rgba(30,30,60,0.93);padding:${isFS ? '48px 38px 38px 38px' : '36px 32px 28px 32px'};border-radius:22px;box-shadow:${blueShadow};max-width:min(380px,98vw);width:96%;text-align:center;backdrop-filter:${isFS ? 'blur(6px)' : 'none'};border:${isFS ? '3px solid #5bbcff' : 'none'};transition:all 0.2s;`;
-        let titleFont = isFS ? '2.5em' : '2.1em';
-        let statFont = isFS ? '1.5em' : '1.3em';
-        let subFont = isFS ? '1.2em' : '1.1em';
+        let overlayBoxStyle = `background:rgba(30,30,60,0.93);padding:36px 32px 28px 32px;border-radius:22px;box-shadow:${blueShadow};max-width:min(380px,98vw);width:96%;text-align:center;backdrop-filter:none;border:none;transition:all 0.2s;`;
+        let titleFont = '2.1em';
+        let statFont = '1.3em';
+        let subFont = '1.1em';
         overlay.innerHTML = `
           <div style="${overlayBoxStyle}">
             <div style="font-size:${titleFont};font-weight:bold;color:${blueMain};margin-bottom:16px;text-shadow:0 2px 8px #5bbcff99;">Game Over</div>
@@ -881,6 +882,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (dashScore >= levelScore) {
             // If not last level, increment nextDashLevel for next cycle
             if (nextDashLevel < 5) nextDashLevel++;
+            // Increment cyclesSurvived after each Geometry Dash completion (full cycle)
+            cyclesSurvived++;
             dashMode = false;
             started = false;
             setTimeout(() => {
